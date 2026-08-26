@@ -47,6 +47,8 @@ dscommerce/
 │   │   │       ├── Payment.java
 │   │   │       ├── Product.java
 │   │   │       └── Category.java
+│   │   │       ├── OrderItem.java
+│   │   │       └── OrderItemPK.java          
 │   │   └── resources/
 │   │       ├── application.properties
 │   │       └── application-test.properties
@@ -82,26 +84,35 @@ dscommerce/
                                     │ order_id (FK, BIGINT)   │
                                     └─────────────────────────┘
 
-
-┌─────────────────────────┐    M  N    ┌─────────────────────────┐
-│      tb_product         │◀──────────▶│      tb_category        │
-├─────────────────────────┤            ├─────────────────────────┤
-│ id (PK, BIGINT)         │            │ id (PK, BIGINT)         │
-│ name (VARCHAR)          │            │ name (VARCHAR)          │
-│ description (TEXT)      │            └─────────────────────────┘
-│ price (DOUBLE)          │
-│ img_url (VARCHAR)       │
-└────────────┬────────────┘
-             │
-             │ M:N
-             ▼
-┌─────────────────────────┐
-│  tb_product_category    │
-│   (Tabela de Junção)    │
-├─────────────────────────┤
-│ product_id (FK, BIGINT) │
-│ category_id (FK, BIGINT)│
-└─────────────────────────┘
+┌─────────────────────────┐            ┌───────────────────────────┐
+│       tb_order          │ 1        N │       tb_order_item       │ N        1 ┌─────────────────────────┐
+├─────────────────────────┤───────────▶├───────────────────────────┤◀───────────┤      tb_product         │
+│ id (PK, BIGINT)         │            │ order_id (PK_FK, BIGINT)  │            ├─────────────────────────┤
+│ ...                     │            │ product_id (PK_FK, BIGINT)│            │ id (PK, BIGINT)         │
+└─────────────────────────┘            │ quantity (INTEGER)        │            │ name (VARCHAR)          │
+                                       │ price (DOUBLE)            │            │ description (TEXT)      │
+                                       └───────────────────────────┘            │ price (DOUBLE)          │
+                                                                                │ img_url (VARCHAR)       │
+                                                                                └────────────┬────────────┘
+                                                                                             │
+                                                                                             │ M:N
+                                                                                             ▼
+                                                                               ┌─────────────────────────┐
+                                                                               │  tb_product_category    │
+                                                                               │   (Tabela de Junção)    │
+                                                                               ├─────────────────────────┤
+                                                                               │ product_id (FK, BIGINT) │
+                                                                               │ category_id (FK, BIGINT)│
+                                                                               └────────────┬────────────┘
+                                                                                            │
+                                                                                            │ N:M
+                                                                                            ▼
+                                                                               ┌─────────────────────────┐
+                                                                               │      tb_category        │
+                                                                               ├─────────────────────────┤
+                                                                               │ id (PK, BIGINT)         │
+                                                                               │ name (VARCHAR)          │
+                                                                               └─────────────────────────┘
 ```
 
 ## Relacionamentos JPA
@@ -203,7 +214,119 @@ private OrderStatus status;
 
 > O JPA armazena o nome do enum como String no banco. Para armazenar o ordinal (número), use `@Enumerated(EnumType.ORDINAL)`.
 
-### 5. Geração de Chaves Primárias
+### 5. ManyToMany com Classe de Associação — Order ↔ Product (OrderItem)
+
+Quando o relacionamento N:N precisa guardar dados extras (por exemplo, `quantity` e `price` do item no momento da compra), o ideal é **não** usar `@ManyToMany` direto.  
+Nesse caso, criamos uma **classe de associação** (`OrderItem`) e modelamos como:
+
+- `Order 1:N OrderItem`
+- `Product 1:N OrderItem`
+
+Assim, o N:N entre `Order` e `Product` é representado indiretamente por `OrderItem`.
+
+> A chave primária de `OrderItem` é **composta** pela combinação de `order_id` + `product_id`.  
+> Isso é representado pela classe `OrderItemPK` anotada com `@Embeddable` e injetada via `@EmbeddedId`.
+
+**OrderItem.java (entidade de associação):**
+```java
+@Entity
+@Table(name = "tb_order_item")
+public class OrderItem {
+
+  @EmbeddedId
+  private OrderItemPK id = new OrderItemPK();
+  private Integer quantity;
+  private Double price;
+
+  public OrderItem() {
+  }
+
+  public OrderItem(Order order, Product product, Integer quantity, Double price) {
+    id.setOrder(order);
+    id.setProduct(product);
+    this.quantity = quantity;
+    this.price = price;
+  }
+
+  public Integer getQuantity() {
+    return quantity;
+  }
+
+  public void setQuantity(Integer quantity) {
+    this.quantity = quantity;
+  }
+
+  public Double getPrice() {
+    return price;
+  }
+
+  public void setPrice(Double price) {
+    this.price = price;
+  }
+
+  public Order getOrder() {
+    return id.getOrder();
+  }
+
+  public void setOrder(Order order) {
+    id.setOrder(order);
+  }
+
+  public Product getProduct() {
+    return id.getProduct();
+  }
+
+  public void setProduct(Product product) {
+    id.setProduct(product);
+  }
+}
+```
+
+**OrderItemPK.java (chave composta):**
+```java
+@Embeddable
+public class OrderItemPK implements Serializable {
+
+  @ManyToOne
+  @JoinColumn(name = "order_id")
+  private Order order;
+
+  @ManyToOne
+  @JoinColumn(name = "product_id")
+  private Product product;
+
+  public OrderItemPK() {
+  }
+
+  public Order getOrder() {
+    return order;
+  }
+
+  public void setOrder(Order order) {
+    this.order = order;
+  }
+
+  public Product getProduct() {
+    return product;
+  }
+
+  public void setProduct(Product product) {
+    this.product = product;
+  }
+}
+```
+
+**Quando usar `@ManyToMany` direto vs classe de associação**
+
+| Cenário | Melhor abordagem |
+|---------|------------------|
+| Apenas vínculo entre as entidades (sem campos extras) | `@ManyToMany` com tabela de junção |
+| Precisa de atributos no relacionamento (`quantity`, `price`, `discount`, etc.) | Classe de associação (`OrderItem`) |
+| Precisa de regras de negócio/auditoria por item do vínculo | Classe de associação (`OrderItem`) |
+
+> Regra prática: se a tabela de junção virar uma entidade com significado próprio no domínio, trate-a como entidade (classe de associação), não como `@ManyToMany` simples.
+
+### 6. Geração de Chaves Primárias
 
 Todas as entidades usam auto-incremento:
 
