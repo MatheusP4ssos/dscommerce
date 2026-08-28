@@ -8,6 +8,7 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 @Table(name = "tb_payment")
@@ -56,4 +57,16 @@ public class Payment {
     this.order = order;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Payment payment)) {
+      return false;
+    }
+    return Objects.equals(id, payment.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id);
+  }
 }

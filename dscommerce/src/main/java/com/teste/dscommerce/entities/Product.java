@@ -10,6 +10,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -89,5 +90,18 @@ public class Product {
 
   public Set<Category> getCategories() {
     return categories;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Product product)) {
+      return false;
+    }
+    return Objects.equals(id, product.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id);
   }
 }

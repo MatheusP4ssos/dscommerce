@@ -12,6 +12,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -86,5 +87,18 @@ public class Order {
 
   public void setPayment(Payment payment) {
     this.payment = payment;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Order order)) {
+      return false;
+    }
+    return Objects.equals(id, order.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id);
   }
 }
