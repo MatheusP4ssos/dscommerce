@@ -3,6 +3,7 @@ package com.teste.dscommerce.services;
 import com.teste.dscommerce.dto.ProductDTO;
 import com.teste.dscommerce.entities.Product;
 import com.teste.dscommerce.exceptions.ResourceNotFoundException;
+import com.teste.dscommerce.mappers.ProductMapper;
 import com.teste.dscommerce.repositories.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,15 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductService {
 
   private final ProductRepository repository;
+  private final ProductMapper mapper;
 
-  public ProductService(ProductRepository repository) {
+  public ProductService(ProductRepository repository, ProductMapper mapper) {
     this.repository = repository;
+    this.mapper = mapper;
   }
 
   @Transactional(readOnly = true)
   public ProductDTO findById(Long id) {
     Product product = repository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Id não encontrado: " + id));
-    return new ProductDTO(product);
+    return mapper.toDTO(product);
   }
 }
