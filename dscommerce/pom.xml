@@ -82,6 +82,10 @@
 							<version>${org.mapstruct.version}</version>
 						</path>
 					</annotationProcessorPaths>
+					<compilerArgs>
+						<arg>-Amapstruct.suppressGeneratorTimestamp=true</arg>
+						<arg>-Amapstruct.suppressGeneratorVersionInfoComment=true</arg>
+					</compilerArgs>
 				</configuration>
 			</plugin>
 		</plugins>
