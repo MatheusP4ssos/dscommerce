@@ -36,4 +36,40 @@ public class ProductService {
     Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
     return repository.findAll(pageable).map(mapper::toDTO);
   }
+
+  @Transactional
+  public ProductDTO insert(ProductDTO dto) {
+    Product entity = mapper.toEntity(dto);
+    entity = repository.save(entity);
+
+    System.out.println(">>> ID da Entidade no Banco: " + entity.getId());
+
+    ProductDTO result = mapper.toDTO(entity);
+    System.out.println(">>> ID do DTO gerado pelo Mapper: " + result.getId());
+
+    return result;
+  }
+
+  @Transactional
+  public ProductDTO update(Long id, ProductDTO dto) {
+    Product entity = repository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Id não encontrado: " + id));
+
+    copyToEntity(dto, entity);
+
+    entity = repository.save(entity);
+    return mapper.toDTO(entity);
+  }
+
+  @Transactional
+  public void delete(Long id) {
+    repository.deleteById(id);
+  }
+
+  private void copyToEntity(ProductDTO dto, Product entity) {
+    entity.setName(dto.getName());
+    entity.setDescription(dto.getDescription());
+    entity.setPrice(dto.getPrice());
+    entity.setImgUrl(dto.getImgUrl());
+  }
 }
