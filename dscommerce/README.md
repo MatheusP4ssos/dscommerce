@@ -1,13 +1,32 @@
 # DSCommerce
 
-Sistema de e-commerce desenvolvido com Spring Boot, utilizando JPA/Hibernate para persistência de dados e H2 como banco de dados.
+Sistema de e-commerce desenvolvido com Spring Boot, em arquitetura em camadas (Controller → Service → Repository), utilizando JPA/Hibernate para persistência, MapStruct para mapeamento de DTOs, SpringDoc/OpenAPI para documentação e H2 como banco de dados.
+
+## Funcionalidades implementadas
+
+- Entidades do domínio de e-commerce: `User`, `Order`, `Product`, `Category`, `OrderItem`, `Payment` e `OrderStatus`
+- Relacionamentos JPA completos (1:N, 1:1, N:N e classe de associação com chave composta)
+- **API REST completa de Produtos** em arquitetura em camadas:
+  - `GET /products` — listagem com paginação
+  - `GET /products/{id}` — consulta por ID
+  - `POST /products` — inserção
+  - `PUT /products/{id}` — atualização
+  - `DELETE /products/{id}` — exclusão
+- Paginação com ordenação fixa por `name`
+- Mapeamento `Product ↔ ProductDTO` com **MapStruct** (geração automática em tempo de compilação)
+- Tratamento de exceções padronizado com `@ControllerAdvice` / `@ExceptionHandler`
+- Documentação interativa com **Swagger UI** (SpringDoc)
+- Seed de dados completo (`data.sql`): 30 produtos, 6 categorias, 5 usuários, 8 pedidos, pagamentos e itens de pedido
 
 ## Tecnologias
 
 - Java 17
 - Spring Boot 3.5.16
-- Spring Data JPA
-- H2 Database (modo arquivo)
+- Spring Data JPA / Hibernate
+- Spring Web (MVC)
+- MapStruct 1.6.3
+- SpringDoc OpenAPI 2.7.0 (Swagger UI)
+- H2 Database (em memória)
 - Maven
 
 ## Pré-requisitos
@@ -30,6 +49,8 @@ Sistema de e-commerce desenvolvido com Spring Boot, utilizando JPA/Hibernate par
 
 A aplicação estará disponível em: `http://localhost:8080`
 
+Swagger UI disponível em: `http://localhost:8080/swagger-ui.html`
+
 H2 Console disponível em: `http://localhost:8080/h2-console`
 
 ## Estrutura do Projeto
@@ -40,24 +61,87 @@ dscommerce/
 │   ├── main/
 │   │   ├── java/com/teste/dscommerce/
 │   │   │   ├── DscommerceApplication.java
-│   │   │   └── entities/
-│   │   │       ├── User.java
-│   │   │       ├── Order.java
-│   │   │       ├── OrderStatus.java
-│   │   │       ├── Payment.java
-│   │   │       ├── Product.java
-│   │   │       └── Category.java
-│   │   │       ├── OrderItem.java
-│   │   │       └── OrderItemPK.java          
+│   │   │   ├── config/                  → SwaggerConfig (OpenAPI)
+│   │   │   ├── controllers/             → ProductController, StandardError
+│   │   │   │   └── handlers/            → ControllerExceptionHandler
+│   │   │   ├── dto/                     → ProductDTO, CustomError
+│   │   │   ├── entities/                → User, Order, OrderItem, OrderItemPK,
+│   │   │   │                              OrderStatus, Payment, Product, Category
+│   │   │   ├── exceptions/              → ResourceNotFoundException
+│   │   │   ├── mappers/                 → ProductMapper (MapStruct)
+│   │   │   ├── repositories/            → ProductRepository
+│   │   │   └── services/                → ProductService
 │   │   └── resources/
 │   │       ├── application.properties
-│   │       └── application-test.properties
+│   │       ├── application-test.properties
+│   │       └── data.sql                 → seed de dados
 │   └── test/
 │       └── java/com/teste/dscommerce/
 │           └── DscommerceApplicationTests.java
-├── data/ (H2 database files)
 ├── pom.xml
 └── mvnw / mvnw.cmd
+```
+
+## API - Endpoints de Produtos
+
+| Método | Rota | Descrição | Retorno |
+|--------|------|-----------|---------|
+| `GET` | `/products` | Lista produtos com paginação e ordenação fixa por `name` | `200` — `Page<ProductDTO>` |
+| `GET` | `/products/{id}` | Busca produto por ID | `200` — `ProductDTO` / `404` |
+| `POST` | `/products` | Insere novo produto | `201` — `ProductDTO` com header `Location` |
+| `PUT` | `/products/{id}` | Atualiza produto existente | `200` — `ProductDTO` / `404` |
+| `DELETE` | `/products/{id}` | Remove produto | `204` sem corpo / `404` |
+
+### Exemplos
+
+**Listar produtos (página 0, tamanho 10, ordenado por `name`):**
+
+```bash
+curl "http://localhost:8080/products?page=0&size=10"
+```
+
+**Inserir produto:**
+
+```bash
+curl -X POST "http://localhost:8080/products" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mouse Gamer",
+    "description": "Mouse ergonomico com sensor 16000 DPI.",
+    "price": 249.90,
+    "imgUrl": "https://.../mouse.jpg"
+  }'
+```
+
+> A rota `GET /products` recebe `page` e `size` como `@RequestParam` (valores padrão: `0` e `10`). A ordenação é sempre por `name`, definida em `ProductService.findAll`.
+
+## MapStruct
+
+O projeto utiliza o **MapStruct** como annotation processor. A interface `ProductMapper` declara os métodos de conversão e a implementação `ProductMapperImpl` é gerada automaticamente na compilação (em `target/generated-sources/annotations`).
+
+```java
+@Mapper(componentModel = "spring")
+public interface ProductMapper {
+  ProductDTO toDTO(Product entity);
+  Product toEntity(ProductDTO dto);
+}
+```
+
+- `componentModel = "spring"` registra a implementação como bean `@Component`, permitindo a injeção via construtor no `ProductService`.
+- O `ProductDTO` possui construtor padrão e setters, requisitos para o mapeamento DTO → Entidade.
+
+## Tratamento de Exceções
+
+A `ResourceNotFoundException`, lançada pelo service quando um produto não é encontrado, é capturada pelo `ControllerExceptionHandler` (`@ControllerAdvice`), que devolve uma resposta JSON padronizada:
+
+```json
+{
+  "timestamp": "2026-09-04T15:40:00Z",
+  "status": 404,
+  "error": "Recurso não encontrado",
+  "message": "Id não encontrado: 999",
+  "path": "/products/{id}"
+}
 ```
 
 ## Modelo de Dados - Diagrama de Entidades
@@ -342,6 +426,6 @@ private Long id;
 
 ## Observações
 
-- O banco H2 está configurado em modo arquivo (`data/dscommerce.mv.db`), preservando os dados entre reinicializações.
-- O profile ativo por padrão é `test`.
+- O profile ativo por padrão é `test`, que utiliza H2 **em memória** (`jdbc:h2:mem:dscommerce`). Os dados são recarregados a cada inicialização pelo `data.sql`.
 - Para produção, recomenda-se substituir o H2 por PostgreSQL ou MySQL.
+- A listagem paginada (`GET /products`) sempre ordena por `name`, independentemente do request.
