@@ -1,5 +1,6 @@
-package com.teste.dscommerce.controllers;
+package com.teste.dscommerce.controllers.handlers;
 
+import com.teste.dscommerce.controllers.StandardError;
 import com.teste.dscommerce.exceptions.ResourceNotFoundException;
 import java.time.Instant;
 import org.springframework.http.HttpStatus;

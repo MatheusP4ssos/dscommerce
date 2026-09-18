@@ -1,6 +1,8 @@
 package com.teste.dscommerce.controllers;
 
+import com.teste.dscommerce.dto.CustomError;
 import com.teste.dscommerce.dto.ProductDTO;
+import com.teste.dscommerce.exceptions.ResourceNotFoundException;
 import com.teste.dscommerce.services.ProductService;
 import java.net.URI;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +27,10 @@ public class ProductController {
   private ProductService productService;
 
   @GetMapping(value = "/{id}")
-  public ResponseEntity<ProductDTO> findById(@PathVariable Long id) {
-  ProductDTO dto = productService.findById(id);
-   return ResponseEntity.ok(dto);
+  public ResponseEntity<?> findById(@PathVariable Long id) {
+
+      ProductDTO dto = productService.findById(id);
+      return ResponseEntity.ok(dto);
   }
 
   @GetMapping

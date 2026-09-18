@@ -41,13 +41,7 @@ public class ProductService {
   public ProductDTO insert(ProductDTO dto) {
     Product entity = mapper.toEntity(dto);
     entity = repository.save(entity);
-
-    System.out.println(">>> ID da Entidade no Banco: " + entity.getId());
-
-    ProductDTO result = mapper.toDTO(entity);
-    System.out.println(">>> ID do DTO gerado pelo Mapper: " + result.getId());
-
-    return result;
+    return mapper.toDTO(entity);
   }
 
   @Transactional
