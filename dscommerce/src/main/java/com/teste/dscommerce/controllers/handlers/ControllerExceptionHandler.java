@@ -1,7 +1,9 @@
 package com.teste.dscommerce.controllers.handlers;
 
 import com.teste.dscommerce.controllers.StandardError;
+import com.teste.dscommerce.exceptions.DatabaseException;
 import com.teste.dscommerce.exceptions.ResourceNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,9 +14,16 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 public class ControllerExceptionHandler {
 
   @ExceptionHandler(ResourceNotFoundException.class)
-  public ResponseEntity<StandardError> resourceNotFound(ResourceNotFoundException e) {
+  public ResponseEntity<StandardError> resourceNotFound(ResourceNotFoundException e, HttpServletRequest request) {
     HttpStatus status = HttpStatus.NOT_FOUND;
-    StandardError err = new StandardError(Instant.now(), status.value(), "Recurso não encontrado", e.getMessage(), "/products/{id}");
+    StandardError err = new StandardError(Instant.now(), status.value(), "Recurso não encontrado", e.getMessage(), request.getRequestURI());
+    return ResponseEntity.status(status).body(err);
+  }
+
+  @ExceptionHandler(DatabaseException.class)
+  public ResponseEntity<StandardError> database(DatabaseException e, HttpServletRequest request) {
+    HttpStatus status = HttpStatus.BAD_REQUEST;
+    StandardError err = new StandardError(Instant.now(), status.value(), "Falha de integridade referencial", e.getMessage(), request.getRequestURI());
     return ResponseEntity.status(status).body(err);
   }
 }
