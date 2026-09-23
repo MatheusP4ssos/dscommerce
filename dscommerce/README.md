@@ -13,8 +13,12 @@ Sistema de e-commerce desenvolvido com Spring Boot, em arquitetura em camadas (C
   - `PUT /products/{id}` — atualização
   - `DELETE /products/{id}` — exclusão
 - Paginação com ordenação fixa por `name`
+- Validação de dados com **Bean Validation** (`@NotBlank`, `@Size`, `@Positive`) nos endpoints POST e PUT
 - Mapeamento `Product ↔ ProductDTO` com **MapStruct** (geração automática em tempo de compilação)
-- Tratamento de exceções padronizado com `@ControllerAdvice` / `@ExceptionHandler`
+- Tratamento de exceções padronizado com `@ControllerAdvice` / `@ExceptionHandler`:
+  - `404` — recurso não encontrado
+  - `400` — falha de integridade referencial na exclusão
+  - `422` — dados inválidos (validação)
 - Documentação interativa com **Swagger UI** (SpringDoc)
 - Seed de dados completo (`data.sql`): 30 produtos, 6 categorias, 5 usuários, 8 pedidos, pagamentos e itens de pedido
 
@@ -24,6 +28,7 @@ Sistema de e-commerce desenvolvido com Spring Boot, em arquitetura em camadas (C
 - Spring Boot 3.5.16
 - Spring Data JPA / Hibernate
 - Spring Web (MVC)
+- Bean Validation (Spring Validation)
 - MapStruct 1.6.3
 - SpringDoc OpenAPI 2.7.0 (Swagger UI)
 - H2 Database (em memória)
@@ -64,10 +69,12 @@ dscommerce/
 │   │   │   ├── config/                  → SwaggerConfig (OpenAPI)
 │   │   │   ├── controllers/             → ProductController, StandardError
 │   │   │   │   └── handlers/            → ControllerExceptionHandler
-│   │   │   ├── dto/                     → ProductDTO, CustomError
+│   │   │   ├── dto/                     → ProductDTO, CustomError,
+│   │   │   │                              ValidationError, FieldMessage
 │   │   │   ├── entities/                → User, Order, OrderItem, OrderItemPK,
 │   │   │   │                              OrderStatus, Payment, Product, Category
-│   │   │   ├── exceptions/              → ResourceNotFoundException
+│   │   │   ├── exceptions/              → ResourceNotFoundException,
+│   │   │   │                              DatabaseException
 │   │   │   ├── mappers/                 → ProductMapper (MapStruct)
 │   │   │   ├── repositories/            → ProductRepository
 │   │   │   └── services/                → ProductService
@@ -88,9 +95,9 @@ dscommerce/
 |--------|------|-----------|---------|
 | `GET` | `/products` | Lista produtos com paginação e ordenação fixa por `name` | `200` — `Page<ProductDTO>` |
 | `GET` | `/products/{id}` | Busca produto por ID | `200` — `ProductDTO` / `404` |
-| `POST` | `/products` | Insere novo produto | `201` — `ProductDTO` com header `Location` |
-| `PUT` | `/products/{id}` | Atualiza produto existente | `200` — `ProductDTO` / `404` |
-| `DELETE` | `/products/{id}` | Remove produto | `204` sem corpo / `404` |
+| `POST` | `/products` | Insere novo produto | `201` — `ProductDTO` com header `Location` / `422` |
+| `PUT` | `/products/{id}` | Atualiza produto existente | `200` — `ProductDTO` / `404` / `422` |
+| `DELETE` | `/products/{id}` | Remove produto | `204` sem corpo / `404` / `400` (integridade referencial) |
 
 ### Exemplos
 
@@ -132,7 +139,11 @@ public interface ProductMapper {
 
 ## Tratamento de Exceções
 
-A `ResourceNotFoundException`, lançada pelo service quando um produto não é encontrado, é capturada pelo `ControllerExceptionHandler` (`@ControllerAdvice`), que devolve uma resposta JSON padronizada:
+Todas as exceções são capturadas pelo `ControllerExceptionHandler` (`@ControllerAdvice`) e devolvidas em formato JSON padronizado.
+
+### 404 — Recurso não encontrado
+
+Lançada pelo service quando um produto não existe (`ResourceNotFoundException`):
 
 ```json
 {
@@ -140,8 +151,59 @@ A `ResourceNotFoundException`, lançada pelo service quando um produto não é e
   "status": 404,
   "error": "Recurso não encontrado",
   "message": "Id não encontrado: 999",
-  "path": "/products/{id}"
+  "path": "/products/999"
 }
+```
+
+### 400 — Falha de integridade referencial (DELETE)
+
+Lançada pelo service quando o produto está vinculado a pedidos e não pode ser excluído (`DatabaseException`):
+
+```json
+{
+  "timestamp": "2026-09-04T15:40:00Z",
+  "status": 400,
+  "error": "Falha de integridade referencial",
+  "message": "Falha de integridade referencial",
+  "path": "/products/1"
+}
+```
+
+### 422 — Dados inválidos (POST / PUT)
+
+Gerada automaticamente pela validação `@Valid` no controller; a resposta lista cada campo inválido:
+
+```json
+{
+  "timestamp": "2026-09-04T15:40:00Z",
+  "status": 422,
+  "error": "Dados inválidos",
+  "path": "/products",
+  "errors": [
+    {
+      "fieldName": "name",
+      "message": "O nome do produto deve ter entre 3 e 80 caracteres"
+    },
+    {
+      "fieldName": "price",
+      "message": "O preço do produto deve ser positivo"
+    }
+  ]
+}
+```
+
+### Validação aplicada ao `ProductDTO`
+
+```java
+@Size(min = 3, max = 80, message = "O nome do produto deve ter entre 3 e 80 caracteres")
+@NotBlank(message = "Campo obrigatório")
+private String name;
+
+@Size(min = 10, message = "A descrição do produto deve ter no mínimo 10 caracteres")
+private String description;
+
+@Positive(message = "O preço do produto deve ser positivo")
+private Double price;
 ```
 
 ## Modelo de Dados - Diagrama de Entidades
