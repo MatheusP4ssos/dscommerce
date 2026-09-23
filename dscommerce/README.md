@@ -12,9 +12,16 @@ Sistema de e-commerce desenvolvido com Spring Boot, em arquitetura em camadas (C
   - `POST /products` — inserção
   - `PUT /products/{id}` — atualização
   - `DELETE /products/{id}` — exclusão
+- **API REST completa de Usuários** em arquitetura em camadas:
+  - `GET /users` — listagem com paginação
+  - `GET /users/{id}` — consulta por ID
+  - `POST /users` — inserção
+  - `PUT /users/{id}` — atualização
+  - `DELETE /users/{id}` — exclusão
 - Paginação com ordenação fixa por `name`
 - Validação de dados com **Bean Validation** (`@NotBlank`, `@Size`, `@Positive`) nos endpoints POST e PUT
-- Mapeamento `Product ↔ ProductDTO` com **MapStruct** (geração automática em tempo de compilação)
+- **Criptografia de senha com BCrypt** (Spring Security Crypto): a senha nunca é salva em texto plano e nunca retorna nas respostas da API
+- Mapeamento `Product ↔ ProductDTO` e `User ↔ UserDTO` com **MapStruct** (geração automática em tempo de compilação)
 - Tratamento de exceções padronizado com `@ControllerAdvice` / `@ExceptionHandler`:
   - `404` — recurso não encontrado
   - `400` — falha de integridade referencial na exclusão
@@ -31,6 +38,7 @@ Sistema de e-commerce desenvolvido com Spring Boot, em arquitetura em camadas (C
 - Bean Validation (Spring Validation)
 - MapStruct 1.6.3
 - SpringDoc OpenAPI 2.7.0 (Swagger UI)
+- Spring Security Crypto (BCrypt `PasswordEncoder`)
 - H2 Database (em memória)
 - Maven
 
@@ -66,18 +74,21 @@ dscommerce/
 │   ├── main/
 │   │   ├── java/com/teste/dscommerce/
 │   │   │   ├── DscommerceApplication.java
-│   │   │   ├── config/                  → SwaggerConfig (OpenAPI)
-│   │   │   ├── controllers/             → ProductController, StandardError
+│   │   │   ├── config/                  → SwaggerConfig (OpenAPI),
+│   │   │   │                              SecurityConfig (BCrypt)
+│   │   │   ├── controllers/             → ProductController, UserController,
+│   │   │   │   │                          StandardError
 │   │   │   │   └── handlers/            → ControllerExceptionHandler
-│   │   │   ├── dto/                     → ProductDTO, CustomError,
+│   │   │   ├── dto/                     → ProductDTO, UserDTO, UserInsertDTO,
+│   │   │   │                              UserUpdateDTO, CustomError,
 │   │   │   │                              ValidationError, FieldMessage
 │   │   │   ├── entities/                → User, Order, OrderItem, OrderItemPK,
 │   │   │   │                              OrderStatus, Payment, Product, Category
 │   │   │   ├── exceptions/              → ResourceNotFoundException,
 │   │   │   │                              DatabaseException
-│   │   │   ├── mappers/                 → ProductMapper (MapStruct)
-│   │   │   ├── repositories/            → ProductRepository
-│   │   │   └── services/                → ProductService
+│   │   │   ├── mappers/                 → ProductMapper, UserMapper (MapStruct)
+│   │   │   ├── repositories/            → ProductRepository, UserRepository
+│   │   │   └── services/                → ProductService, UserService
 │   │   └── resources/
 │   │       ├── application.properties
 │   │       ├── application-test.properties
@@ -122,20 +133,63 @@ curl -X POST "http://localhost:8080/products" \
 
 > A rota `GET /products` recebe `page` e `size` como `@RequestParam` (valores padrão: `0` e `10`). A ordenação é sempre por `name`, definida em `ProductService.findAll`.
 
+## API - Endpoints de Usuários
+
+| Método | Rota | Descrição | Retorno |
+|--------|------|-----------|---------|
+| `GET` | `/users` | Lista usuários com paginação e ordenação fixa por `name` | `200` — `Page<UserDTO>` |
+| `GET` | `/users/{id}` | Busca usuário por ID | `200` — `UserDTO` / `404` |
+| `POST` | `/users` | Insere novo usuário (senha é encriptada com BCrypt) | `201` — `UserDTO` com header `Location` / `422` |
+| `PUT` | `/users/{id}` | Atualiza usuário existente (não altera a senha) | `200` — `UserDTO` / `404` / `422` |
+| `DELETE` | `/users/{id}` | Remove usuário | `204` sem corpo / `404` / `400` (integridade referencial) |
+
+### Exemplos
+
+**Inserir usuário:**
+
+```bash
+curl -X POST "http://localhost:8080/users" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Maria Silva",
+    "email": "maria@gmail.com",
+    "phone": "11999887766",
+    "birthDate": "1995-07-11",
+    "roles": "client",
+    "password": "senha-secreta"
+  }'
+```
+
+> A senha é obrigatória **apenas no `POST`** (`UserInsertDTO`). No `PUT` é usado o `UserUpdateDTO`, que não possui o campo `password` — portanto a senha não é alterada/recriada na atualização do usuário.
+
+## Criptografia de Senha (Spring Security Crypto)
+
+Quando a senha é enviada no `POST /users`, o `UserService` aplica o hash antes de persistir:
+
+```java
+entity.setPassword(passwordEncoder.encode(dto.getPassword()));
+```
+
+- O hash é gerado pelo **BCryptPasswordEncoder** (bean `PasswordEncoder` exposto em `SecurityConfig`), um algoritmo de hash unidirecional com salt.
+- No banco, a coluna `password` guarda **apenas o hash**, nunca a senha em texto claro.
+- O getter `getPassword()` da entidade `User` é anotado com `@JsonIgnore`, garantindo que o hash nunca apareça nas respostas JSON da API (nem em `GET /users`, `GET /users/{id}`, `POST /users` ou `PUT /users/{id}`).
+- O `UserDTO` de saída não possui campo de senha por padrão — apenas o `UserInsertDTO`, usado no `POST`, recebe a senha.
+
 ## MapStruct
 
-O projeto utiliza o **MapStruct** como annotation processor. A interface `ProductMapper` declara os métodos de conversão e a implementação `ProductMapperImpl` é gerada automaticamente na compilação (em `target/generated-sources/annotations`).
+O projeto utiliza o **MapStruct** como annotation processor. As interfaces `ProductMapper` e `UserMapper` declaram os métodos de conversão e as implementações (`ProductMapperImpl` e `UserMapperImpl`) são geradas automaticamente na compilação (em `target/generated-sources/annotations`).
+
+Para o `UserMapper`, o mapeamento do `UserInsertDTO` para a entidade `User` **ignora o `id`** (gerado pelo banco) e a senha é definida manualmente no service via `passwordEncoder.encode(...)`:
 
 ```java
 @Mapper(componentModel = "spring")
-public interface ProductMapper {
-  ProductDTO toDTO(Product entity);
-  Product toEntity(ProductDTO dto);
+public interface UserMapper {
+  UserDTO toDTO(User entity);
+
+  @Mapping(target = "id", ignore = true)
+  User toEntity(UserInsertDTO dto);
 }
 ```
-
-- `componentModel = "spring"` registra a implementação como bean `@Component`, permitindo a injeção via construtor no `ProductService`.
-- O `ProductDTO` possui construtor padrão e setters, requisitos para o mapeamento DTO → Entidade.
 
 ## Tratamento de Exceções
 
@@ -205,6 +259,35 @@ private String description;
 @Positive(message = "O preço do produto deve ser positivo")
 private Double price;
 ```
+
+### Validação aplicada ao `UserDTO` e `UserInsertDTO`
+
+```java
+// UserDTO
+@NotBlank
+@Size(min = 3, max = 80, message = "O nome deve ter entre 3 e 80 caracteres")
+private String name;
+
+@NotBlank
+@Email(message = "O email deve ser válido")
+private String email;
+
+@NotBlank
+@Pattern(regexp = "^\\(?([1-9]{2})\\)?[-. ]?([2-9][0-9]{3,4})[-. ]?([0-9]{4})$",
+    message = "O telefone deve conter apenas números e ter 10 ou 11 dígitos")
+private String phone;
+
+@NotNull
+@Past(message = "A data de nascimento deve ser no passado")
+private LocalDate birthDate;
+
+// UserInsertDTO
+@NotBlank(message = "Campo obrigatório")
+@Size(min = 8, message = "A senha deve ter no mínimo 8 caracteres")
+private String password;
+```
+
+> A validação de telefone usa `@Pattern` e aceita os formatos `(11) 98888-7777`, `11988887766`, `11-98888-7777`, entre outros, desde que tenham DDD válido e 10 ou 11 dígitos. A senha (presente apenas no `UserInsertDTO`) exige no mínimo 8 caracteres.
 
 ## Modelo de Dados - Diagrama de Entidades
 

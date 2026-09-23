@@ -1,5 +1,6 @@
 package com.teste.dscommerce.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -83,6 +84,7 @@ public class User {
     this.birthDate = birthDate;
   }
 
+  @JsonIgnore
   public String getPassword() {
     return password;
   }
