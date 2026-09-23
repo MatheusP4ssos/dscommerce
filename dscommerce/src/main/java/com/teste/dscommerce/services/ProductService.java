@@ -1,6 +1,5 @@
 package com.teste.dscommerce.services;
 
-import com.teste.dscommerce.dto.CustomError;
 import com.teste.dscommerce.dto.ProductDTO;
 import com.teste.dscommerce.entities.Product;
 import com.teste.dscommerce.exceptions.DatabaseException;
@@ -13,13 +12,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 
 @Service
@@ -72,17 +67,17 @@ public class ProductService {
     }
     try {
       repository.deleteById(id);
-      repository.flush(); // Força a execução SQL imediatamente para capturar exceções do banco dentro do try-catch
+      repository.flush();
     } catch (DataIntegrityViolationException e) {
       throw new DatabaseException("Falha de integridade referencial");
     }
   }
 
-    private void copyToEntity (ProductDTO dto, Product entity){
-      entity.setName(dto.getName());
-      entity.setDescription(dto.getDescription());
-      entity.setPrice(dto.getPrice());
-      entity.setImgUrl(dto.getImgUrl());
-    }
+  private void copyToEntity(ProductDTO dto, Product entity) {
+    entity.setName(dto.getName());
+    entity.setDescription(dto.getDescription());
+    entity.setPrice(dto.getPrice());
+    entity.setImgUrl(dto.getImgUrl());
   }
+}
 
