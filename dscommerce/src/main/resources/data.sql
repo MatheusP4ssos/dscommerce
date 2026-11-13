@@ -3,17 +3,30 @@
 -- =============================================
 
 -- =============================================
--- 1. USERS
+-- 1. ROLES
 -- =============================================
-INSERT INTO tb_user (name, email, phone, birth_date, password, roles) VALUES
-('Administrador', 'admin@dscommerce.com', '(11) 99999-0000', '1985-01-15', '$2a$10$HY2l0QqJ2RwqGzB5x3Yz3uXqZ8bYf0dK1mN4pO6rS8tU0vW2xY4', 'ROLE_ADMIN'),
-('Maria Silva', 'maria@email.com', '(11) 98888-1111', '1990-05-20', '$2a$10$HY2l0QqJ2RwqGzB5x3Yz3uXqZ8bYf0dK1mN4pO6rS8tU0vW2xY4', 'ROLE_CLIENT'),
-('Joao Souza', 'joao@email.com', '(21) 97777-2222', '1988-08-10', '$2a$10$HY2l0QqJ2RwqGzB5x3Yz3uXqZ8bYf0dK1mN4pO6rS8tU0vW2xY4', 'ROLE_CLIENT'),
-('Ana Costa', 'ana@email.com', '(31) 96666-3333', '1995-12-03', '$2a$10$HY2l0QqJ2RwqGzB5x3Yz3uXqZ8bYf0dK1mN4pO6rS8tU0vW2xY4', 'ROLE_CLIENT'),
-('Pedro Lima', 'pedro@email.com', '(41) 95555-4444', '1992-03-25', '$2a$10$HY2l0QqJ2RwqGzB5x3Yz3uXqZ8bYf0dK1mN4pO6rS8tU0vW2xY4', 'ROLE_CLIENT');
+INSERT INTO tb_role (authority) VALUES ('ROLE_ADMIN');
+INSERT INTO tb_role (authority) VALUES ('ROLE_CLIENT');
 
 -- =============================================
--- 2. CATEGORIES
+-- 2. USERS
+-- =============================================
+INSERT INTO tb_user (name, email, phone, birth_date, password) VALUES
+('Administrador', 'admin@dscommerce.com', '(11) 99999-0000', '1985-01-15', '$2a$10$n/uFoYI3lv1h3LsYHm2Vp.40VWRy6LaftFTL7hwiUT.pLAMMa5NLC'),
+('Maria Silva', 'maria@email.com', '(11) 98888-1111', '1990-05-20', '$2a$10$n/uFoYI3lv1h3LsYHm2Vp.40VWRy6LaftFTL7hwiUT.pLAMMa5NLC'),
+('Joao Souza', 'joao@email.com', '(21) 97777-2222', '1988-08-10', '$2a$10$n/uFoYI3lv1h3LsYHm2Vp.40VWRy6LaftFTL7hwiUT.pLAMMa5NLC'),
+('Ana Costa', 'ana@email.com', '(31) 96666-3333', '1995-12-03', '$2a$10$n/uFoYI3lv1h3LsYHm2Vp.40VWRy6LaftFTL7hwiUT.pLAMMa5NLC'),
+('Pedro Lima', 'pedro@email.com', '(41) 95555-4444', '1992-03-25', '$2a$10$n/uFoYI3lv1h3LsYHm2Vp.40VWRy6LaftFTL7hwiUT.pLAMMa5NLC');
+
+-- USERS <-> ROLES
+INSERT INTO tb_user_role (user_id, role_id) VALUES (1, 1); -- Administrador -> ROLE_ADMIN
+INSERT INTO tb_user_role (user_id, role_id) VALUES (2, 2); -- Maria -> ROLE_CLIENT
+INSERT INTO tb_user_role (user_id, role_id) VALUES (3, 2); -- Joao -> ROLE_CLIENT
+INSERT INTO tb_user_role (user_id, role_id) VALUES (4, 2); -- Ana -> ROLE_CLIENT
+INSERT INTO tb_user_role (user_id, role_id) VALUES (5, 2); -- Pedro -> ROLE_CLIENT
+
+-- =============================================
+-- 3. CATEGORIES
 -- =============================================
 INSERT INTO tb_category (name) VALUES ('Livros');
 INSERT INTO tb_category (name) VALUES ('Eletronicos');
@@ -23,7 +36,7 @@ INSERT INTO tb_category (name) VALUES ('Jardim');
 INSERT INTO tb_category (name) VALUES ('Brinquedos');
 
 -- =============================================
--- 3. PRODUCTS (30 itens)
+-- 4. PRODUCTS (30 itens)
 -- =============================================
 
 -- Livros
@@ -69,7 +82,7 @@ INSERT INTO tb_product (name, description, price, img_url) VALUES ('Jogo de Tabu
 INSERT INTO tb_product (name, description, price, img_url) VALUES ('Cubo Magico', 'Cubo magico speed 3x3 profissional.', 49.90, 'https://raw.githubusercontent.com/devsuperior/dscatalog-resources/master/backend/img/30-big.jpg');
 
 -- =============================================
--- 4. PRODUCT <-> CATEGORY (associações N:N)
+-- 5. PRODUCT <-> CATEGORY (associações N:N)
 -- =============================================
 
 -- Livros (cat 1)
@@ -117,7 +130,7 @@ INSERT INTO tb_product_category (product_id, category_id) VALUES (30, 6);  -- Cu
 INSERT INTO tb_product_category (product_id, category_id) VALUES (29, 1);  -- Jogo de Tabuleiro (tambem como livro/estrategia)
 
 -- =============================================
--- 5. ORDERS (8 pedidos)
+-- 6. ORDERS (8 pedidos)
 -- =============================================
 INSERT INTO tb_order (moment, status, user_id) VALUES
 ('2024-01-15 10:30:00', 3, 2);    -- Order 1: Maria - DELIVERED
@@ -137,7 +150,7 @@ INSERT INTO tb_order (moment, status, user_id) VALUES
 ('2024-08-01 17:45:00', 2, 2);    -- Order 8: Maria - SHIPPED
 
 -- =============================================
--- 6. PAYMENTS (1:1 com cada Order)
+-- 7. PAYMENTS (1:1 com cada Order)
 -- =============================================
 INSERT INTO tb_payment (order_id, moment) VALUES (1, '2024-01-15 10:35:00');
 INSERT INTO tb_payment (order_id, moment) VALUES (2, '2024-02-20 14:20:00');
@@ -149,7 +162,7 @@ INSERT INTO tb_payment (order_id, moment) VALUES (7, '2024-07-22 08:05:00');
 INSERT INTO tb_payment (order_id, moment) VALUES (8, '2024-08-01 17:50:00');
 
 -- =============================================
--- 7. ORDER ITEMS (itens dos pedidos)
+-- 8. ORDER ITEMS (itens dos pedidos)
 -- =============================================
 
 -- Order 1 (Maria - DELIVERED): 3 itens

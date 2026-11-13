@@ -35,7 +35,7 @@ public class Order {
   @OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
   private Payment payment;
 
-  @OneToMany(mappedBy = "id.order")
+  @OneToMany(mappedBy = "id.order", cascade = CascadeType.ALL)
   private Set<OrderItem> items = new HashSet<>();
 
   public Order() {
@@ -88,6 +88,19 @@ public class Order {
   public void setPayment(Payment payment) {
     this.payment = payment;
   }
+
+  public Set<OrderItem> getItems() {
+    return items;
+  }
+
+  public void setItems(Set<OrderItem> items) {
+    this.items = items;
+  }
+
+public double getTotal() {
+    return items.stream().mapToDouble(OrderItem::getSubTotal).sum();
+  }
+
 
   @Override
   public boolean equals(Object o) {

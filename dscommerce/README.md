@@ -1,576 +1,439 @@
 # DSCommerce
 
-Sistema de e-commerce desenvolvido com Spring Boot, em arquitetura em camadas (Controller → Service → Repository), utilizando JPA/Hibernate para persistência, MapStruct para mapeamento de DTOs, SpringDoc/OpenAPI para documentação e H2 como banco de dados.
+API REST de e-commerce desenvolvida com Spring Boot em arquitetura em camadas
+(Controller -> Service -> Repository), com persistência via JPA/Hibernate, mapeamento
+com MapStruct, autenticação stateless com JWT (HS256), autorização por perfil,
+documentação OpenAPI/Swagger e H2 em memória para desenvolvimento e testes.
 
-## Funcionalidades implementadas
-
-- Entidades do domínio de e-commerce: `User`, `Order`, `Product`, `Category`, `OrderItem`, `Payment` e `OrderStatus`
-- Relacionamentos JPA completos (1:N, 1:1, N:N e classe de associação com chave composta)
-- **API REST completa de Produtos** em arquitetura em camadas:
-  - `GET /products` — listagem com paginação
-  - `GET /products/{id}` — consulta por ID
-  - `POST /products` — inserção
-  - `PUT /products/{id}` — atualização
-  - `DELETE /products/{id}` — exclusão
-- **API REST completa de Usuários** em arquitetura em camadas:
-  - `GET /users` — listagem com paginação
-  - `GET /users/{id}` — consulta por ID
-  - `POST /users` — inserção
-  - `PUT /users/{id}` — atualização
-  - `DELETE /users/{id}` — exclusão
-- Paginação com ordenação fixa por `name`
-- Validação de dados com **Bean Validation** (`@NotBlank`, `@Size`, `@Positive`) nos endpoints POST e PUT
-- **Criptografia de senha com BCrypt** (Spring Security Crypto): a senha nunca é salva em texto plano e nunca retorna nas respostas da API
-- Mapeamento `Product ↔ ProductDTO` e `User ↔ UserDTO` com **MapStruct** (geração automática em tempo de compilação)
-- Tratamento de exceções padronizado com `@ControllerAdvice` / `@ExceptionHandler`:
-  - `404` — recurso não encontrado
-  - `400` — falha de integridade referencial na exclusão
-  - `422` — dados inválidos (validação)
-- Documentação interativa com **Swagger UI** (SpringDoc)
-- Seed de dados completo (`data.sql`): 30 produtos, 6 categorias, 5 usuários, 8 pedidos, pagamentos e itens de pedido
-
-## Tecnologias
+## Stack
 
 - Java 17
 - Spring Boot 3.5.16
 - Spring Data JPA / Hibernate
 - Spring Web (MVC)
-- Bean Validation (Spring Validation)
+- Spring Security (Resource Server + JWT)
+- Spring Validation (Bean Validation)
 - MapStruct 1.6.3
 - SpringDoc OpenAPI 2.7.0 (Swagger UI)
-- Spring Security Crypto (BCrypt `PasswordEncoder`)
-- H2 Database (em memória)
-- Maven
-
-## Pré-requisitos
-
-- Java 17 ou superior
+- H2 (runtime e testes)
+- PostgreSQL (driver de runtime)
 - Maven 3.8+
 
-## Como Rodar
+## Como executar
 
 ```bash
-# Compilar o projeto
 ./mvnw clean compile
-
-# Executar os testes
 ./mvnw test
-
-# Rodar a aplicação
 ./mvnw spring-boot:run
 ```
 
-A aplicação estará disponível em: `http://localhost:8080`
+Serviços:
 
-Swagger UI disponível em: `http://localhost:8080/swagger-ui.html`
+- API: `http://localhost:8081`
+- Swagger UI: `http://localhost:8081/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8081/v3/api-docs`
+- H2 Console: `http://localhost:8081/h2-console`
+  - JDBC URL: `jdbc:h2:mem:dscommerce`
+  - Usuário: `sa`
+  - Senha: vazia
 
-H2 Console disponível em: `http://localhost:8080/h2-console`
+O profile ativo por padrão é `test` (`application-test.properties`), que usa H2 em memória,
+`ddl-auto=create-drop` e recarrega o `data.sql` a cada inicialização.
 
-## Estrutura do Projeto
+### Variáveis de ambiente
 
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `JWT_SECRET` | valor de desenvolvimento no `application.properties` | Chave Base64 usada para assinar o JWT (mínimo 256 bits em HS256) |
+| `JWT_DURATION` | `900` | Validade do token em segundos |
+| `JWT_ISSUER` | `dscommerce` | Claim `iss` do token |
+| `CORS_ORIGINS` | `http://localhost:3000` | Origens permitidas, separadas por vírgula |
+
+O valor padrão de `JWT_SECRET` existe apenas para facilitar o ambiente local. Em produção
+defina a variável com um segredo forte e rotacionável.
+
+## Autenticação e autorização (JWT)
+
+### Fluxo
+
+1. O cliente envia `POST /auth/login` com email e senha.
+2. O `AuthenticationManager` valida as credenciais via `UserDetailsServiceImpl`.
+3. O `JwtService` gera um token HS256 com `sub` (email), `roles`, `iss`, `iat`, `exp`.
+4. O cliente envia o token em `Authorization: Bearer <token>`.
+5. O filtro do Resource Server valida assinatura, expiração e issuer, e o
+   `JwtAuthenticationConverter` converte o claim `roles` em authorities.
+
+A aplicação é stateless: não há sessão HTTP nem CSRF habilitado.
+
+### Login
+
+```bash
+curl -X POST "http://localhost:8081/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@dscommerce.com",
+    "password": "12345678"
+  }'
 ```
+
+Resposta `200`:
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "tokenType": "Bearer",
+  "expiresIn": 900
+}
+```
+
+Credenciais inválidas retornam `401` com corpo JSON padronizado.
+
+### Usuários do seed
+
+| ID | Email | Senha | Perfil |
+|---|---|---|---|
+| 1 | `admin@dscommerce.com` | `12345678` | `ROLE_ADMIN` |
+| 2 | `maria@email.com` | `12345678` | `ROLE_CLIENT` |
+| 3 | `joao@email.com` | `12345678` | `ROLE_CLIENT` |
+| 4 | `ana@email.com` | `12345678` | `ROLE_CLIENT` |
+| 5 | `pedro@email.com` | `12345678` | `ROLE_CLIENT` |
+
+As senhas do seed são armazenadas como hash BCrypt em `data.sql`.
+
+### Matriz de acesso
+
+| Rota | Método | Acesso |
+|---|---|---|
+| `/auth/login` | `POST` | Público |
+| `/users` | `POST` | Público (sempre cria `ROLE_CLIENT`) |
+| `/users/**` | `GET`, `PUT`, `DELETE` | `ROLE_ADMIN` |
+| `/products/**` | `GET` | Público |
+| `/products/**` | `POST`, `PUT`, `DELETE` | `ROLE_ADMIN` |
+| `/orders` | `POST` | Autenticado |
+| `/orders/**` | `GET` | Autenticado (cliente vê apenas os próprios) |
+| `/orders/**` | `PUT`, `DELETE` | `ROLE_ADMIN` |
+| `/payments/**` | Todos | `ROLE_ADMIN` |
+| `/order-items/**` | Todos | `ROLE_ADMIN` |
+| `/v3/api-docs/**`, `/swagger-ui/**`, `/swagger-ui.html` | `GET` | Público |
+| `/h2-console/**` | Todos | Público (apenas ambiente local) |
+| Qualquer outra rota | Todos | Autenticado |
+
+Regras de posse aplicadas no `OrderService`:
+
+- `GET /orders/{id}`: admin ou dono do pedido; caso contrário `403`.
+- `GET /orders`: admin recebe todos; cliente recebe apenas os seus.
+- `POST /orders`: admin pode informar qualquer `clientId`; cliente só pode informar o próprio
+  `clientId` (e o campo é obrigatório por validação).
+
+### Respostas de erro de segurança
+
+`401 Unauthorized` (token ausente, inválido ou credenciais erradas):
+
+```json
+{
+  "timestamp": "2026-11-13T12:00:00Z",
+  "status": 401,
+  "error": "Não autenticado",
+  "message": "Autenticação necessária",
+  "path": "/users"
+}
+```
+
+`403 Forbidden` (autenticado sem permissão):
+
+```json
+{
+  "timestamp": "2026-11-13T12:00:00Z",
+  "status": 403,
+  "error": "Acesso negado",
+  "message": "Você não tem permissão para acessar este recurso",
+  "path": "/users"
+}
+```
+
+### Arquivos de segurança
+
+- `config/SecurityConfig.java`: filter chain, CORS, regras por rota, `PasswordEncoder`,
+  `AuthenticationManager`.
+- `security/JwtConfig.java`: `SecretKey`, `JwtEncoder`, `JwtDecoder` e conversor de roles.
+- `security/JwtService.java`: emissão do token.
+- `security/UserDetailsServiceImpl.java`: carrega o usuário e suas authorities.
+- `security/RestAuthenticationEntryPoint.java`: resposta JSON de 401.
+- `security/RestAccessDeniedHandler.java`: resposta JSON de 403.
+- `services/AuthService.java` e `controllers/AuthController.java`: fluxo de login.
+- `dto/LoginDTO.java` e `dto/TokenDTO.java`: contrato de entrada e saída.
+- `src/test/java/com/teste/dscommerce/AuthIntegrationTests.java`: testes de integração.
+
+## Endpoints
+
+### Autenticação
+
+| Método | Rota | Descrição | Retorno |
+|---|---|---|---|
+| `POST` | `/auth/login` | Autentica e gera o JWT | `200` com `TokenDTO` / `401` |
+
+### Produtos
+
+| Método | Rota | Descrição | Retorno |
+|---|---|---|---|
+| `GET` | `/products` | Lista paginada, ordenada por `name` | `200` com `Page<ProductDTO>` |
+| `GET` | `/products/{id}` | Busca por ID | `200` / `404` |
+| `POST` | `/products` | Cria produto (ADMIN) | `201` + `Location` / `422` |
+| `PUT` | `/products/{id}` | Atualiza produto (ADMIN) | `200` / `404` / `422` |
+| `DELETE` | `/products/{id}` | Remove produto (ADMIN) | `204` / `404` / `400` |
+
+```bash
+curl "http://localhost:8081/products?page=0&size=10"
+```
+
+```bash
+curl -X POST "http://localhost:8081/products" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mouse Gamer",
+    "description": "Mouse ergonomico com sensor de 16000 DPI.",
+    "price": 249.90,
+    "imgUrl": "https://exemplo.com/mouse.jpg"
+  }'
+```
+
+### Usuários
+
+| Método | Rota | Descrição | Retorno |
+|---|---|---|---|
+| `GET` | `/users` | Lista paginada (ADMIN) | `200` com `Page<UserDTO>` |
+| `GET` | `/users/{id}` | Busca por ID (ADMIN) | `200` / `404` |
+| `GET` | `/users/email/{email}` | Busca por email (ADMIN) | `200` / `404` |
+| `GET` | `/users/name/{name}` | Busca por nome, paginada (ADMIN) | `200` / `404` |
+| `POST` | `/users` | Cadastro público (sempre `ROLE_CLIENT`) | `201` + `Location` / `422` / `400` |
+| `PUT` | `/users/{id}` | Atualiza usuário (ADMIN) | `200` / `404` / `422` |
+| `DELETE` | `/users/{id}` | Remove usuário (ADMIN) | `204` / `404` / `400` |
+
+```bash
+curl -X POST "http://localhost:8081/users" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Maria Silva",
+    "email": "maria.silva@email.com",
+    "phone": "(11) 98888-7777",
+    "birthDate": "1995-07-11",
+    "password": "12345678"
+  }'
+```
+
+A senha é obrigatória apenas no `POST` (`UserInsertDTO`) e é gravada com BCrypt. O
+`UserUpdateDTO` não possui senha, portanto o `PUT` não altera a senha. O campo `roles` no
+`UserDTO` é um conjunto de authorities e nunca expõe a senha.
+
+### Pedidos
+
+| Método | Rota | Descrição | Retorno |
+|---|---|---|---|
+| `GET` | `/orders` | Lista paginada (admin: todos; cliente: próprios) | `200` com `Page<OrderDTO>` |
+| `GET` | `/orders/{id}` | Busca por ID (admin ou dono) | `200` / `403` / `404` |
+| `POST` | `/orders` | Cria pedido | `201` + `Location` / `404` / `422` |
+| `PUT` | `/orders/{id}` | Atualiza momento/status (ADMIN) | `200` / `404` / `422` |
+| `DELETE` | `/orders/{id}` | Remove pedido (ADMIN) | `204` / `404` |
+
+```bash
+curl -X POST "http://localhost:8081/orders" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clientId": 2,
+    "items": [
+      { "productId": 1, "quantity": 2 }
+    ]
+  }'
+```
+
+O preço do item é sempre obtido do produto no momento da criação; o total é calculado a
+partir dos itens. O status inicial é `WAITING_PAYMENT`.
+
+### Pagamentos
+
+| Método | Rota | Descrição | Retorno |
+|---|---|---|---|
+| `GET` | `/payments` | Lista paginada (ADMIN) | `200` com `Page<PaymentDTO>` |
+| `GET` | `/payments/{id}` | Busca por ID (ADMIN) | `200` / `404` |
+| `POST` | `/payments` | Cria pagamento para um pedido (ADMIN) | `201` + `Location` / `404` / `422` |
+| `PUT` | `/payments/{id}` | Atualiza o momento (ADMIN) | `200` / `404` / `422` |
+| `DELETE` | `/payments/{id}` | Remove pagamento (ADMIN) | `204` / `404` |
+
+```bash
+curl -X POST "http://localhost:8081/payments" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderId": 1,
+    "moment": "2026-11-13T12:30:00Z"
+  }'
+```
+
+### Itens de pedido
+
+| Método | Rota | Descrição | Retorno |
+|---|---|---|---|
+| `GET` | `/order-items` | Lista paginada (ADMIN) | `200` com `Page<OrderItemDTO>` |
+| `GET` | `/order-items/{orderId}/{productId}` | Busca pela chave composta (ADMIN) | `200` / `404` |
+| `POST` | `/order-items` | Cria item (ADMIN) | `200` / `404` / `422` |
+| `PUT` | `/order-items/{orderId}/{productId}` | Atualiza item (ADMIN) | `200` / `404` / `422` |
+| `DELETE` | `/order-items/{orderId}/{productId}` | Remove item (ADMIN) | `204` / `404` |
+
+## Estrutura do projeto
+
+```text
 dscommerce/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/teste/dscommerce/
 │   │   │   ├── DscommerceApplication.java
-│   │   │   ├── config/                  → SwaggerConfig (OpenAPI),
-│   │   │   │                              SecurityConfig (BCrypt)
-│   │   │   ├── controllers/             → ProductController, UserController,
-│   │   │   │   │                          StandardError
-│   │   │   │   └── handlers/            → ControllerExceptionHandler
-│   │   │   ├── dto/                     → ProductDTO, UserDTO, UserInsertDTO,
-│   │   │   │                              UserUpdateDTO, CustomError,
-│   │   │   │                              ValidationError, FieldMessage
-│   │   │   ├── entities/                → User, Order, OrderItem, OrderItemPK,
-│   │   │   │                              OrderStatus, Payment, Product, Category
-│   │   │   ├── exceptions/              → ResourceNotFoundException,
-│   │   │   │                              DatabaseException
-│   │   │   ├── mappers/                 → ProductMapper, UserMapper (MapStruct)
-│   │   │   ├── repositories/            → ProductRepository, UserRepository
-│   │   │   └── services/                → ProductService, UserService
+│   │   │   ├── config/
+│   │   │   │   ├── SecurityConfig.java
+│   │   │   │   └── SwaggerConfig.java
+│   │   │   ├── controllers/
+│   │   │   │   ├── AuthController.java
+│   │   │   │   ├── ProductController.java
+│   │   │   │   ├── UserController.java
+│   │   │   │   ├── OrderController.java
+│   │   │   │   ├── PaymentController.java
+│   │   │   │   ├── OrderItemController.java
+│   │   │   │   └── handlers/ControllerExceptionHandler.java
+│   │   │   ├── dto/
+│   │   │   ├── entities/
+│   │   │   ├── exceptions/
+│   │   │   ├── mappers/
+│   │   │   ├── repositories/
+│   │   │   ├── security/
+│   │   │   │   ├── JwtConfig.java
+│   │   │   │   ├── JwtService.java
+│   │   │   │   ├── UserDetailsServiceImpl.java
+│   │   │   │   ├── RestAuthenticationEntryPoint.java
+│   │   │   │   └── RestAccessDeniedHandler.java
+│   │   │   └── services/
 │   │   └── resources/
 │   │       ├── application.properties
 │   │       ├── application-test.properties
-│   │       └── data.sql                 → seed de dados
-│   └── test/
-│       └── java/com/teste/dscommerce/
-│           └── DscommerceApplicationTests.java
+│   │       └── data.sql
+│   └── test/java/com/teste/dscommerce/
+│       ├── DscommerceApplicationTests.java
+│       └── AuthIntegrationTests.java
 ├── pom.xml
-└── mvnw / mvnw.cmd
+├── mvnw
+└── mvnw.cmd
 ```
 
-## API - Endpoints de Produtos
+## Modelo de dados
 
-| Método | Rota | Descrição | Retorno |
-|--------|------|-----------|---------|
-| `GET` | `/products` | Lista produtos com paginação e ordenação fixa por `name` | `200` — `Page<ProductDTO>` |
-| `GET` | `/products/{id}` | Busca produto por ID | `200` — `ProductDTO` / `404` |
-| `POST` | `/products` | Insere novo produto | `201` — `ProductDTO` com header `Location` / `422` |
-| `PUT` | `/products/{id}` | Atualiza produto existente | `200` — `ProductDTO` / `404` / `422` |
-| `DELETE` | `/products/{id}` | Remove produto | `204` sem corpo / `404` / `400` (integridade referencial) |
+- `User` 1:N `Order` (`tb_order.user_id`)
+- `Order` 1:1 `Payment` (chave compartilhada via `@MapsId`)
+- `Order` 1:N `OrderItem` e `Product` 1:N `OrderItem` (chave composta `order_id` + `product_id`)
+- `Product` N:N `Category` (`tb_product_category`)
+- `User` N:N `Role` (`tb_user_role`)
 
-### Exemplos
+`OrderStatus`: `WAITING_PAYMENT`, `PAID`, `SHIPPED`, `DELIVERED`, `CANCELED`.
 
-**Listar produtos (página 0, tamanho 10, ordenado por `name`):**
+## Testes
 
 ```bash
-curl "http://localhost:8080/products?page=0&size=10"
+./mvnw test
 ```
 
-**Inserir produto:**
-
-```bash
-curl -X POST "http://localhost:8080/products" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Mouse Gamer",
-    "description": "Mouse ergonomico com sensor 16000 DPI.",
-    "price": 249.90,
-    "imgUrl": "https://.../mouse.jpg"
-  }'
-```
-
-> A rota `GET /products` recebe `page` e `size` como `@RequestParam` (valores padrão: `0` e `10`). A ordenação é sempre por `name`, definida em `ProductService.findAll`.
-
-## API - Endpoints de Usuários
-
-| Método | Rota | Descrição | Retorno |
-|--------|------|-----------|---------|
-| `GET` | `/users` | Lista usuários com paginação e ordenação fixa por `name` | `200` — `Page<UserDTO>` |
-| `GET` | `/users/{id}` | Busca usuário por ID | `200` — `UserDTO` / `404` |
-| `POST` | `/users` | Insere novo usuário (senha é encriptada com BCrypt) | `201` — `UserDTO` com header `Location` / `422` |
-| `PUT` | `/users/{id}` | Atualiza usuário existente (não altera a senha) | `200` — `UserDTO` / `404` / `422` |
-| `DELETE` | `/users/{id}` | Remove usuário | `204` sem corpo / `404` / `400` (integridade referencial) |
-
-### Exemplos
-
-**Inserir usuário:**
-
-```bash
-curl -X POST "http://localhost:8080/users" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Maria Silva",
-    "email": "maria@gmail.com",
-    "phone": "11999887766",
-    "birthDate": "1995-07-11",
-    "roles": "client",
-    "password": "senha-secreta"
-  }'
-```
-
-> A senha é obrigatória **apenas no `POST`** (`UserInsertDTO`). No `PUT` é usado o `UserUpdateDTO`, que não possui o campo `password` — portanto a senha não é alterada/recriada na atualização do usuário.
-
-## Criptografia de Senha (Spring Security Crypto)
-
-Quando a senha é enviada no `POST /users`, o `UserService` aplica o hash antes de persistir:
-
-```java
-entity.setPassword(passwordEncoder.encode(dto.getPassword()));
-```
-
-- O hash é gerado pelo **BCryptPasswordEncoder** (bean `PasswordEncoder` exposto em `SecurityConfig`), um algoritmo de hash unidirecional com salt.
-- No banco, a coluna `password` guarda **apenas o hash**, nunca a senha em texto claro.
-- O getter `getPassword()` da entidade `User` é anotado com `@JsonIgnore`, garantindo que o hash nunca apareça nas respostas JSON da API (nem em `GET /users`, `GET /users/{id}`, `POST /users` ou `PUT /users/{id}`).
-- O `UserDTO` de saída não possui campo de senha por padrão — apenas o `UserInsertDTO`, usado no `POST`, recebe a senha.
-
-## MapStruct
-
-O projeto utiliza o **MapStruct** como annotation processor. As interfaces `ProductMapper` e `UserMapper` declaram os métodos de conversão e as implementações (`ProductMapperImpl` e `UserMapperImpl`) são geradas automaticamente na compilação (em `target/generated-sources/annotations`).
-
-Para o `UserMapper`, o mapeamento do `UserInsertDTO` para a entidade `User` **ignora o `id`** (gerado pelo banco) e a senha é definida manualmente no service via `passwordEncoder.encode(...)`:
-
-```java
-@Mapper(componentModel = "spring")
-public interface UserMapper {
-  UserDTO toDTO(User entity);
-
-  @Mapping(target = "id", ignore = true)
-  User toEntity(UserInsertDTO dto);
-}
-```
-
-## Tratamento de Exceções
-
-Todas as exceções são capturadas pelo `ControllerExceptionHandler` (`@ControllerAdvice`) e devolvidas em formato JSON padronizado.
-
-### 404 — Recurso não encontrado
-
-Lançada pelo service quando um produto não existe (`ResourceNotFoundException`):
-
-```json
-{
-  "timestamp": "2026-09-04T15:40:00Z",
-  "status": 404,
-  "error": "Recurso não encontrado",
-  "message": "Id não encontrado: 999",
-  "path": "/products/999"
-}
-```
-
-### 400 — Falha de integridade referencial (DELETE)
-
-Lançada pelo service quando o produto está vinculado a pedidos e não pode ser excluído (`DatabaseException`):
-
-```json
-{
-  "timestamp": "2026-09-04T15:40:00Z",
-  "status": 400,
-  "error": "Falha de integridade referencial",
-  "message": "Falha de integridade referencial",
-  "path": "/products/1"
-}
-```
-
-### 422 — Dados inválidos (POST / PUT)
-
-Gerada automaticamente pela validação `@Valid` no controller; a resposta lista cada campo inválido:
-
-```json
-{
-  "timestamp": "2026-09-04T15:40:00Z",
-  "status": 422,
-  "error": "Dados inválidos",
-  "path": "/products",
-  "errors": [
-    {
-      "fieldName": "name",
-      "message": "O nome do produto deve ter entre 3 e 80 caracteres"
-    },
-    {
-      "fieldName": "price",
-      "message": "O preço do produto deve ser positivo"
-    }
-  ]
-}
-```
-
-### Validação aplicada ao `ProductDTO`
-
-```java
-@Size(min = 3, max = 80, message = "O nome do produto deve ter entre 3 e 80 caracteres")
-@NotBlank(message = "Campo obrigatório")
-private String name;
-
-@Size(min = 10, message = "A descrição do produto deve ter no mínimo 10 caracteres")
-private String description;
-
-@Positive(message = "O preço do produto deve ser positivo")
-private Double price;
-```
-
-### Validação aplicada ao `UserDTO` e `UserInsertDTO`
-
-```java
-// UserDTO
-@NotBlank
-@Size(min = 3, max = 80, message = "O nome deve ter entre 3 e 80 caracteres")
-private String name;
-
-@NotBlank
-@Email(message = "O email deve ser válido")
-private String email;
-
-@NotBlank
-@Pattern(regexp = "^\\(?([1-9]{2})\\)?[-. ]?([2-9][0-9]{3,4})[-. ]?([0-9]{4})$",
-    message = "O telefone deve conter apenas números e ter 10 ou 11 dígitos")
-private String phone;
-
-@NotNull
-@Past(message = "A data de nascimento deve ser no passado")
-private LocalDate birthDate;
-
-// UserInsertDTO
-@NotBlank(message = "Campo obrigatório")
-@Size(min = 8, message = "A senha deve ter no mínimo 8 caracteres")
-private String password;
-```
-
-> A validação de telefone usa `@Pattern` e aceita os formatos `(11) 98888-7777`, `11988887766`, `11-98888-7777`, entre outros, desde que tenham DDD válido e 10 ou 11 dígitos. A senha (presente apenas no `UserInsertDTO`) exige no mínimo 8 caracteres.
-
-## Modelo de Dados - Diagrama de Entidades
-
-```
-┌─────────────────────────┐         ┌─────────────────────────┐
-│        tb_user          │         │       tb_order          │
-├─────────────────────────┤         ├─────────────────────────┤
-│ id (PK, BIGINT)         │    1  N │ id (PK, BIGINT)         │
-│ name (VARCHAR)          │────────▶│ moment (TIMESTAMP)      │
-│ email (VARCHAR)         │         │ status (VARCHAR)        │
-│ phone (VARCHAR)         │         │ user_id (FK, BIGINT)    │
-│ birth_date (DATE)       │         └────────────┬────────────┘
-│ password (VARCHAR)      │                      │
-│ roles (VARCHAR)         │                      │ 1
-└─────────────────────────┘                      │
-                                                 │ 1
-                                                 ▼
-                                    ┌─────────────────────────┐
-                                    │       tb_payment        │
-                                    ├─────────────────────────┤
-                                    │ id (PK, BIGINT)         │
-                                    │ moment (TIMESTAMP)      │
-                                    │ order_id (FK, BIGINT)   │
-                                    └─────────────────────────┘
-
-┌─────────────────────────┐            ┌───────────────────────────┐
-│       tb_order          │ 1        N │       tb_order_item       │ N        1 ┌─────────────────────────┐
-├─────────────────────────┤───────────▶├───────────────────────────┤◀───────────┤      tb_product         │
-│ id (PK, BIGINT)         │            │ order_id (PK_FK, BIGINT)  │            ├─────────────────────────┤
-│ ...                     │            │ product_id (PK_FK, BIGINT)│            │ id (PK, BIGINT)         │
-└─────────────────────────┘            │ quantity (INTEGER)        │            │ name (VARCHAR)          │
-                                       │ price (DOUBLE)            │            │ description (TEXT)      │
-                                       └───────────────────────────┘            │ price (DOUBLE)          │
-                                                                                │ img_url (VARCHAR)       │
-                                                                                └────────────┬────────────┘
-                                                                                             │
-                                                                                             │ M:N
-                                                                                             ▼
-                                                                               ┌─────────────────────────┐
-                                                                               │  tb_product_category    │
-                                                                               │   (Tabela de Junção)    │
-                                                                               ├─────────────────────────┤
-                                                                               │ product_id (FK, BIGINT) │
-                                                                               │ category_id (FK, BIGINT)│
-                                                                               └────────────┬────────────┘
-                                                                                            │
-                                                                                            │ N:M
-                                                                                            ▼
-                                                                               ┌─────────────────────────┐
-                                                                               │      tb_category        │
-                                                                               ├─────────────────────────┤
-                                                                               │ id (PK, BIGINT)         │
-                                                                               │ name (VARCHAR)          │
-                                                                               └─────────────────────────┘
-```
-
-## Relacionamentos JPA
-
-### 1. OneToMany / ManyToOne — User ↔ Order
-
-Um **usuário** pode ter vários **pedidos**, mas cada pedido pertence a apenas um usuário.
-
-**User.java:**
-```java
-@OneToMany(mappedBy = "client")
-private List<Order> orders = new ArrayList<>();
-```
-
-**Order.java:**
-```java
-@ManyToOne
-@JoinColumn(name = "user_id")
-private User client;
-```
-
-| Anotação | O que faz |
-|----------|-----------|
-| `@OneToMany(mappedBy = "client")` | Define que User é o lado "inverso" do relacionamento. O campo `client` em Order é o dono da relationship. |
-| `@ManyToOne` | Indica que vários Orders apontam para um User. |
-| `@JoinColumn(name = "user_id")` | Define o nome da coluna de chave estrangeira na tabela `tb_order`. |
-
-### 2. OneToOne — Order ↔ Payment
-
-Cada **pedido** possui apenas um **pagamento**, e cada pagamento pertence a apenas um pedido.
-
-**Order.java:**
-```java
-@OneToOne(mappedBy = "order", cascade = CascadeType.ALL)
-private Payment payment;
-```
-
-**Payment.java:**
-```java
-@OneToOne
-@MapsId
-private Order order;
-```
-
-| Anotação | O que faz |
-|----------|-----------|
-| `@OneToOne(mappedBy = "order")` | Define que Order é o lado "inverso". Payment é o dono do relacionamento. |
-| `@MapsId` | Faz com que a chave primária de Payment seja a mesma de Order (mesmo ID). |
-| `cascade = CascadeType.ALL` | Ao deletar um Order, o Payment associado também é deletado. |
-
-### 3. ManyToMany — Product ↔ Category
-
-Um **produto** pode pertencer a várias **categorias**, e uma categoria pode conter vários produtos.
-
-**Product.java:**
-```java
-@ManyToMany
-@JoinTable(name = "tb_product_category",
-    joinColumns = @JoinColumn(name = "product_id"),
-    inverseJoinColumns = @JoinColumn(name = "category_id")
-)
-private Set<Category> categories = new HashSet<>();
-```
-
-**Category.java:**
-```java
-@ManyToMany(mappedBy = "categories")
-private Set<Product> products = new HashSet<>();
-```
-
-| Anotação | O que faz |
-|----------|-----------|
-| `@ManyToMany` | Define o relacionamento N:N entre Product e Category. |
-| `@JoinTable` | Cria a tabela de junção `tb_product_category` no banco de dados. |
-| `joinColumns` | Coluna que referencia a entidade dona do relacionamento (Product). |
-| `inverseJoinColumns` | Coluna que referencia a entidade do lado inverso (Category). |
-| `mappedBy = "categories"` | Indica que Category é o lado "inverso". O campo `categories` em Product é o dono. |
-| `Set<>` (em vez de `List`) | Evita duplicatas e é mais eficiente para operações de busca em relacionamentos M:N. |
-
-### 4. Enum — OrderStatus
-
-O campo `status` usa um enum para garantir valores válidos:
-
-**OrderStatus.java:**
-```java
-public enum OrderStatus {
-    WAITING_PAYMENT,
-    PAID,
-    SHIPPED,
-    DELIVERED,
-    CANCELED;
-}
-```
-
-**Order.java:**
-```java
-private OrderStatus status;
-```
-
-> O JPA armazena o nome do enum como String no banco. Para armazenar o ordinal (número), use `@Enumerated(EnumType.ORDINAL)`.
-
-### 5. ManyToMany com Classe de Associação — Order ↔ Product (OrderItem)
-
-Quando o relacionamento N:N precisa guardar dados extras (por exemplo, `quantity` e `price` do item no momento da compra), o ideal é **não** usar `@ManyToMany` direto.  
-Nesse caso, criamos uma **classe de associação** (`OrderItem`) e modelamos como:
-
-- `Order 1:N OrderItem`
-- `Product 1:N OrderItem`
-
-Assim, o N:N entre `Order` e `Product` é representado indiretamente por `OrderItem`.
-
-> A chave primária de `OrderItem` é **composta** pela combinação de `order_id` + `product_id`.  
-> Isso é representado pela classe `OrderItemPK` anotada com `@Embeddable` e injetada via `@EmbeddedId`.
-
-**OrderItem.java (entidade de associação):**
-```java
-@Entity
-@Table(name = "tb_order_item")
-public class OrderItem {
-
-  @EmbeddedId
-  private OrderItemPK id = new OrderItemPK();
-  private Integer quantity;
-  private Double price;
-
-  public OrderItem() {
-  }
-
-  public OrderItem(Order order, Product product, Integer quantity, Double price) {
-    id.setOrder(order);
-    id.setProduct(product);
-    this.quantity = quantity;
-    this.price = price;
-  }
-
-  public Integer getQuantity() {
-    return quantity;
-  }
-
-  public void setQuantity(Integer quantity) {
-    this.quantity = quantity;
-  }
-
-  public Double getPrice() {
-    return price;
-  }
-
-  public void setPrice(Double price) {
-    this.price = price;
-  }
-
-  public Order getOrder() {
-    return id.getOrder();
-  }
-
-  public void setOrder(Order order) {
-    id.setOrder(order);
-  }
-
-  public Product getProduct() {
-    return id.getProduct();
-  }
-
-  public void setProduct(Product product) {
-    id.setProduct(product);
-  }
-}
-```
-
-**OrderItemPK.java (chave composta):**
-```java
-@Embeddable
-public class OrderItemPK implements Serializable {
-
-  @ManyToOne
-  @JoinColumn(name = "order_id")
-  private Order order;
-
-  @ManyToOne
-  @JoinColumn(name = "product_id")
-  private Product product;
-
-  public OrderItemPK() {
-  }
-
-  public Order getOrder() {
-    return order;
-  }
-
-  public void setOrder(Order order) {
-    this.order = order;
-  }
-
-  public Product getProduct() {
-    return product;
-  }
-
-  public void setProduct(Product product) {
-    this.product = product;
-  }
-}
-```
-
-**Quando usar `@ManyToMany` direto vs classe de associação**
-
-| Cenário | Melhor abordagem |
-|---------|------------------|
-| Apenas vínculo entre as entidades (sem campos extras) | `@ManyToMany` com tabela de junção |
-| Precisa de atributos no relacionamento (`quantity`, `price`, `discount`, etc.) | Classe de associação (`OrderItem`) |
-| Precisa de regras de negócio/auditoria por item do vínculo | Classe de associação (`OrderItem`) |
-
-> Regra prática: se a tabela de junção virar uma entidade com significado próprio no domínio, trate-a como entidade (classe de associação), não como `@ManyToMany` simples.
-
-### 6. Geração de Chaves Primárias
-
-Todas as entidades usam auto-incremento:
-
-```java
-@Id
-@GeneratedValue(strategy = GenerationType.IDENTITY)
-private Long id;
-```
-
-`GenerationType.IDENTITY` utiliza o auto-incremento do banco de dados (compatível com H2, MySQL, PostgreSQL).
-
----
-
-## Observações
-
-- O profile ativo por padrão é `test`, que utiliza H2 **em memória** (`jdbc:h2:mem:dscommerce`). Os dados são recarregados a cada inicialização pelo `data.sql`.
-- Para produção, recomenda-se substituir o H2 por PostgreSQL ou MySQL.
-- A listagem paginada (`GET /products`) sempre ordena por `name`, independentemente do request.
+Cobertura atual:
+
+- `AuthIntegrationTests`: login com sucesso, senha inválida (401), rota protegida sem token (401),
+  produto público (200), cliente bloqueado em `/users` (403), admin liberado em `/users` (200).
+- `DscommerceApplicationTests`: carregamento do contexto Spring.
+
+## Revisão de JPA: diagnóstico e plano
+
+### Pontos fortes
+
+- Separação consistente em camadas, com DTOs e MapStruct.
+- Injeção de dependência por construtor nos serviços e configurações.
+- `spring.jpa.open-in-view=false` e `@Transactional` explícito nas leituras e escritas.
+- Paginação padronizada e tratamento de exceções centralizado.
+- Modelagem de `OrderItem` como classe de associação com chave composta.
+- Resource Server com JWT e checagem de posse em pedidos.
+
+### Achados
+
+| Severidade | Achado | Local |
+|---|---|---|
+| Alta | Preço do item aceito do DTO em vez de derivado do produto | `OrderItemService.java:63`, `OrderItemService.java:74` |
+| Alta | `Propagation.SUPPORTS` em operações de escrita (delete não transacional) | `ProductService.java:63`, `UserService.java:104`, `OrderService.java:126`, `PaymentService.java:69`, `OrderItemService.java:82` |
+| Alta | `OrderStatus` sem `@Enumerated`, gravando ordinal | `Order.java:29` |
+| Alta | `Payment` com `@GeneratedValue` + `@MapsId` (semântica contraditória) | `Payment.java:17-26` |
+| Alta | Pagamento duplicado para o mesmo pedido não é impedido | `PaymentService.java:47-55` |
+| Alta | Dinheiro em `Double` | `Product.java:26`, `OrderItem.java:15`, `Order.java:100` |
+| Alta | `Instant` mapeado como `TIMESTAMP WITHOUT TIME ZONE` | `Order.java:27`, `Payment.java:21` |
+| Média | N+1 ao mapear pedidos em listagens | `OrderService.java:58-64`, `OrderMapper.java` |
+| Média | `User.roles` em `FetchType.EAGER` | `User.java:36` |
+| Média | `OrderService.update` aceita `moment` do DTO e não valida transições de status | `OrderService.java:88-98` |
+| Média | `equals/hashCode` inconsistente entre entidades e instáveis para ids nulos | `Category.java:53-62`, `OrderItemPK.java:38-50` |
+| Média | `Role.authority` sem restrição de unicidade | `Role.java:17` |
+| Média | Ausência de Flyway/Liquibase; seed com IDs implícitos | `data.sql`, `application-test.properties` |
+| Média | Categorias existem no modelo, mas não são expostas na API | `ProductDTO.java`, `ProductMapper.java:13-15` |
+| Baixa | `setSubTotal` deriva preço e divide por `quantity` (risco de NPE/divisão por zero) | `OrderItem.java:43-48` |
+| Baixa | Listagem de itens ordenada por `quantity` | `OrderItemService.java:50` |
+| Baixa | Ausência de `@Version` para concorrência otimista | `Order.java` |
+| Baixa | `imgUrl` sem tamanho explícito (default 255) | `Product.java:27` |
+| Baixa | Estilo: `GenerationType` qualificado em alguns pontos, `Serializable` com FQN, pacote `com.teste` | Várias entidades |
+
+### Plano de correção
+
+**Fase 1 - Risco e baixo esforço**
+
+- Derivar preço sempre de `Product` em `OrderItemService`.
+- Trocar `Propagation.SUPPORTS` por `REQUIRED` nos deletes.
+- Remover `setSubTotal`.
+- Impedir pagamento duplicado e sincronizar status do pedido ao pagar.
+- Validar transições de status e ignorar `moment` no update.
+- Aplicar `@Enumerated(EnumType.STRING)` e ajustar o `data.sql`.
+
+**Fase 2 - Modelagem e consistência**
+
+- Migrar valores monetários para `BigDecimal` com `precision`/`scale`.
+- Usar timestamp com time zone para `Instant`.
+- Padronizar `equals/hashCode` (id apenas quando não nulo).
+- Criar unicidade para `Role.authority` e para `Payment.order_id`.
+- Adicionar `@Version` em `Order`.
+
+**Fase 3 - Performance e estrutura**
+
+- Adicionar `@EntityGraph` nas consultas de pedidos para eliminar N+1.
+- Avaliar `User.roles` como `LAZY` com `@EntityGraph` no login.
+- Introduzir Flyway/Liquibase e seeds reproduzíveis.
+- Decidir se categorias serão expostas na API ou removidas do modelo.
+
+**Fase 4 - Evolução**
+
+- Refinar autorização com `@PreAuthorize` para regras de posse.
+- Adicionar refresh token, rotação de segredo e rate limit no login.
+- Criar profile de PostgreSQL com migrations e testes com Testcontainers.
+
+## Principais mudanças refletidas neste README
+
+- Spring Security com Resource Server e JWT HS256.
+- Login próprio em `POST /auth/login` com `LoginDTO` e `TokenDTO`.
+- Roles persistidas em `tb_role` e associadas a `User` via `tb_user_role`.
+- Autorização por rota e por posse de pedido.
+- Respostas JSON padronizadas para 401 e 403.
+- CRUDs de pedidos, pagamentos e itens de pedido.
+- Consultas de usuário por email e por nome.
+- Hash BCrypt válido para os usuários do seed.
+- Testes de integração de autenticação e autorização.
+- Driver PostgreSQL adicionado para evolução do ambiente de banco.
+
+## Observações e pendências conhecidas
+
+- `spring.profiles.active=test` está fixo no `application.properties`; o ideal é deixar o profile
+  ser escolhido por ambiente.
+- O H2 Console está liberado sem autenticação e deve ser desabilitado fora do ambiente local.
+- `application-test.properties` está em `src/main/resources`; para uso estritamente de testes,
+  o local recomendado é `src/test/resources`.
+- Ainda não existe profile/configuração de PostgreSQL nem migrations.
+- O segredo JWT padrão é apenas para desenvolvimento.
+- A ordenação das listagens é fixa por serviço (`name` para produtos/usuários, `moment` para
+  pedidos e pagamentos).

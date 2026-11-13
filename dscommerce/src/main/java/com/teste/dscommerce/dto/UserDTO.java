@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.Set;
 
 public class UserDTO {
 
@@ -25,13 +26,13 @@ public class UserDTO {
   @NotNull
   @Past(message = "A data de nascimento deve ser no passado")
   private LocalDate birthDate;
-  private String roles;
+  private Set<String> roles;
 
   public UserDTO() {
   }
 
   public UserDTO(Long id, String name, String email, String phone, LocalDate birthDate,
-      String roles) {
+      Set<String> roles) {
     this.id = id;
     this.name = name;
     this.email = email;
@@ -80,11 +81,11 @@ public class UserDTO {
     this.birthDate = birthDate;
   }
 
-  public String getRoles() {
+  public Set<String> getRoles() {
     return roles;
   }
 
-  public void setRoles(String roles) {
+  public void setRoles(Set<String> roles) {
     this.roles = roles;
   }
 }

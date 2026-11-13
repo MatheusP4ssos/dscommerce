@@ -28,9 +28,21 @@ public class UserController {
   private UserService userService;
 
   @GetMapping(value = "/{id}")
-  public ResponseEntity<?> findById(@PathVariable Long id) {
+  public ResponseEntity<UserDTO> findById(@PathVariable Long id) {
 
       UserDTO dto = userService.findById(id);
+      return ResponseEntity.ok(dto);
+  }
+
+  @GetMapping(value = "/email/{email}")
+  public ResponseEntity<UserDTO> findByEmail(@PathVariable String email) {
+    UserDTO dto = userService.findByEmail(email);
+    return ResponseEntity.ok(dto);
+  }
+
+  @GetMapping(value = "/name/{name}")
+  public ResponseEntity<Page<UserDTO>> findAllByName(@PathVariable String name, Pageable pageable) {
+      Page<UserDTO> dto = userService.findAllByName(name, pageable.getPageNumber(), pageable.getPageSize());
       return ResponseEntity.ok(dto);
   }
 
