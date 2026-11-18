@@ -1,7 +1,6 @@
 package com.teste.dscommerce.entities;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,9 +11,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -26,10 +26,12 @@ public class Order {
   @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
   private Long id;
 
-  @Column(columnDefinition = "TIMESTAMP WITHOUT TIME ZONE")
   private Instant moment;
   @Enumerated(EnumType.STRING)
   private OrderStatus status;
+
+  @Version
+  private Long version;
 
   @ManyToOne
   @JoinColumn(name = "user_id")
@@ -76,6 +78,14 @@ public class Order {
     this.status = status;
   }
 
+  public Long getVersion() {
+    return version;
+  }
+
+  public void setVersion(Long version) {
+    this.version = version;
+  }
+
   public User getClient() {
     return client;
   }
@@ -100,21 +110,23 @@ public class Order {
     this.items = items;
   }
 
-public double getTotal() {
-    return items.stream().mapToDouble(OrderItem::getSubTotal).sum();
+  public BigDecimal getTotal() {
+    return items.stream().map(OrderItem::getSubTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
   }
-
 
   @Override
   public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
     if (!(o instanceof Order order)) {
       return false;
     }
-    return Objects.equals(id, order.id);
+    return id != null && id.equals(order.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(id);
+    return getClass().hashCode();
   }
 }

@@ -3,6 +3,7 @@ package com.teste.dscommerce.dto;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.math.BigDecimal;
 
 public class OrderItemDTO {
 
@@ -16,14 +17,14 @@ public class OrderItemDTO {
   private Integer quantity;
 
   @PositiveOrZero(message = "Preço não pode ser negativo")
-  private Double price;
+  private BigDecimal price;
 
   private String productName;
 
   public OrderItemDTO() {
   }
 
-  public OrderItemDTO(Long orderId, Long productId, Integer quantity, Double price, String productName) {
+  public OrderItemDTO(Long orderId, Long productId, Integer quantity, BigDecimal price, String productName) {
     this.orderId = orderId;
     this.productId = productId;
     this.quantity = quantity;
@@ -63,11 +64,11 @@ public class OrderItemDTO {
     this.quantity = quantity;
   }
 
-  public Double getPrice() {
+  public BigDecimal getPrice() {
     return price;
   }
 
-  public void setPrice(Double price) {
+  public void setPrice(BigDecimal price) {
     this.price = price;
   }
 }

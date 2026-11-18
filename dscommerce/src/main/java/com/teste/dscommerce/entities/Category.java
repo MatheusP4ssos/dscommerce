@@ -6,7 +6,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -51,15 +50,18 @@ public class Category {
 
   @Override
   public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
     if (!(o instanceof Category category)) {
       return false;
     }
-    return Objects.equals(id, category.id);
+    return id != null && id.equals(category.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id);
+    return getClass().hashCode();
   }
 
 }

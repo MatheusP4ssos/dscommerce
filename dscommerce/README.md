@@ -366,8 +366,8 @@ Cobertura atual:
 | Alta | `OrderStatus` sem `@Enumerated`, gravando ordinal | `Order.java:29` | Concluído |
 | Alta | `Payment` com `@GeneratedValue` + `@MapsId` (semântica contraditória) | `Payment.java:17-26` | Concluído |
 | Alta | Pagamento duplicado para o mesmo pedido não é impedido | `PaymentService.java:47-55` | Concluído |
-| Alta | Dinheiro em `Double` | `Product.java:26`, `OrderItem.java:15`, `Order.java:100` | Pendente |
-| Alta | `Instant` mapeado como `TIMESTAMP WITHOUT TIME ZONE` | `Order.java:27`, `Payment.java:21` | Pendente |
+| Alta | Dinheiro em `Double` | `Product.java:26`, `OrderItem.java:15`, `Order.java:100` | Concluído |
+| Alta | `Instant` mapeado como `TIMESTAMP WITHOUT TIME ZONE` | `Order.java:27`, `Payment.java:21` | Concluído |
 | Média | N+1 ao mapear pedidos em listagens | `OrderService.java:58-64`, `OrderMapper.java` | Pendente |
 | Média | `User.roles` em `FetchType.EAGER` | `User.java:36` | Pendente |
 | Média | `OrderService.update` aceita `moment` do DTO e não valida transições de status | `OrderService.java:88-98` | Pendente |
@@ -377,7 +377,7 @@ Cobertura atual:
 | Média | Categorias existem no modelo, mas não são expostas na API | `ProductDTO.java`, `ProductMapper.java:13-15` | Pendente |
 | Baixa | `setSubTotal` deriva preço e divide por `quantity` (risco de NPE/divisão por zero) | `OrderItem.java:43-48` | Concluído |
 | Baixa | Listagem de itens ordenada por `quantity` | `OrderItemService.java:50` | Concluído |
-| Baixa | Ausência de `@Version` para concorrência otimista | `Order.java` | Pendente |
+| Baixa | Ausência de `@Version` para concorrência otimista | `Order.java` | Concluído |
 | Baixa | `imgUrl` sem tamanho explícito (default 255) | `Product.java:27` | Pendente |
 | Baixa | Estilo: `GenerationType` qualificado em alguns pontos, `Serializable` com FQN, pacote `com.teste` | Várias entidades | Pendente |
 
@@ -392,13 +392,13 @@ Cobertura atual:
 - [ ] Validar transições de status e ignorar `moment` no update.
 - [x] Aplicar `@Enumerated(EnumType.STRING)` e ajustar o `data.sql`.
 
-**Fase 2 - Modelagem e consistência**
+**Fase 2 - Modelagem e consistência** (concluída)
 
-- Migrar valores monetários para `BigDecimal` com `precision`/`scale`.
-- Usar timestamp com time zone para `Instant`.
-- Padronizar `equals/hashCode` (id apenas quando não nulo).
-- Criar unicidade para `Role.authority` e para `Payment.order_id`.
-- Adicionar `@Version` em `Order`.
+- [x] Migrar valores monetários para `BigDecimal` com `precision`/`scale` (`numeric(12,2)`).
+- [x] Usar timestamp com time zone para `Instant` (`timestamp with time zone`).
+- [x] Padronizar `equals/hashCode` (id apenas quando não nulo, `hashCode` estável).
+- [x] Unicidade de `Role.authority` (Fase 1) e `Payment.order_id` (PK via `@MapsId`).
+- [x] Adicionar `@Version` em `Order` (seed com `version = 0`).
 
 **Fase 3 - Performance e estrutura**
 
@@ -428,6 +428,8 @@ Cobertura atual:
 - Correções da Fase 1 da revisão de JPA (preço derivado do produto, `@Enumerated(STRING)`,
   `@MapsId` no pagamento, bloqueio de pagamento duplicado, unicidade de `Role.authority`,
   `equals/hashCode` e ordenação dos itens de pedido).
+- Correções da Fase 2 da revisão de JPA (valores monetários em `BigDecimal`, `Instant` com
+  time zone, `equals/hashCode` padronizado e `@Version` em `Order`).
 
 ## Observações e pendências conhecidas
 

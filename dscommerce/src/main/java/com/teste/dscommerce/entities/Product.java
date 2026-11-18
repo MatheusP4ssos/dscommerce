@@ -9,8 +9,9 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.math.BigDecimal;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -23,7 +24,8 @@ public class Product {
   private String name;
   @Column(columnDefinition = "TEXT")
   private String description;
-  private Double price;
+  @Column(precision = 12, scale = 2)
+  private BigDecimal price;
   private String imgUrl;
 
   @ManyToMany
@@ -40,7 +42,7 @@ public class Product {
   public Product() {
   }
 
-  public Product(Long id, String name, String description, Double price, String imgUrl) {
+  public Product(Long id, String name, String description, BigDecimal price, String imgUrl) {
     this.id = id;
     this.name = name;
     this.description = description;
@@ -72,11 +74,11 @@ public class Product {
     this.description = description;
   }
 
-  public Double getPrice() {
+  public BigDecimal getPrice() {
     return price;
   }
 
-  public void setPrice(Double price) {
+  public void setPrice(BigDecimal price) {
     this.price = price;
   }
 
@@ -94,14 +96,17 @@ public class Product {
 
   @Override
   public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
     if (!(o instanceof Product product)) {
       return false;
     }
-    return Objects.equals(id, product.id);
+    return id != null && id.equals(product.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(id);
+    return getClass().hashCode();
   }
 }

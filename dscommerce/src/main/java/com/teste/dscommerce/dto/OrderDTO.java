@@ -1,6 +1,7 @@
 package com.teste.dscommerce.dto;
 
 import com.teste.dscommerce.entities.OrderStatus;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -12,12 +13,12 @@ private Long clientId;
 private String clientName;
 private List<OrderItemDTO> items;
 private PaymentDTO payment;
-private Double total;
+private BigDecimal total;
 
 public OrderDTO() {
 }
 
-public OrderDTO(Long id, Instant moment, OrderStatus orderStatus, Long clientId, String clientName, List<OrderItemDTO> items, PaymentDTO payment, Double total) {
+public OrderDTO(Long id, Instant moment, OrderStatus orderStatus, Long clientId, String clientName, List<OrderItemDTO> items, PaymentDTO payment, BigDecimal total) {
     this.id = id;
     this.moment = moment;
     this.orderStatus = orderStatus;
@@ -84,11 +85,11 @@ public OrderDTO(Long id, Instant moment, OrderStatus orderStatus, Long clientId,
     this.payment = payment;
   }
 
-  public Double getTotal() {
+  public BigDecimal getTotal() {
     return total;
   }
 
-  public void setTotal(Double total) {
+  public void setTotal(BigDecimal total) {
     this.total = total;
   }
 }

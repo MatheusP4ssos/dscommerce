@@ -1,9 +1,10 @@
 package com.teste.dscommerce.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import java.util.Objects;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "tb_order_item")
@@ -12,12 +13,13 @@ public class OrderItem {
   @EmbeddedId
   private OrderItemPK id = new OrderItemPK();
   private Integer quantity;
-  private Double price;
+  @Column(precision = 12, scale = 2)
+  private BigDecimal price;
 
   public OrderItem() {
   }
 
-  public OrderItem(Order order, Product product, Integer quantity, Double price) {
+  public OrderItem(Order order, Product product, Integer quantity, BigDecimal price) {
     id.setOrder(order);
     id.setProduct(product);
     this.quantity = quantity;
@@ -32,16 +34,16 @@ public class OrderItem {
     this.quantity = quantity;
   }
 
-  public Double getPrice() {
+  public BigDecimal getPrice() {
     return price;
   }
 
-  public void setPrice(Double price) {
+  public void setPrice(BigDecimal price) {
     this.price = price;
   }
 
-  public Double getSubTotal() {
-    return price * quantity;
+  public BigDecimal getSubTotal() {
+    return price.multiply(BigDecimal.valueOf(quantity));
   }
 
   public Order getOrder() {
@@ -62,14 +64,17 @@ public class OrderItem {
 
   @Override
   public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
     if (!(o instanceof OrderItem orderItem)) {
       return false;
     }
-    return Objects.equals(id, orderItem.id);
+    return id != null && id.equals(orderItem.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(id);
+    return getClass().hashCode();
   }
 }

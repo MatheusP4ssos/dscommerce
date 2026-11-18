@@ -1,13 +1,11 @@
 package com.teste.dscommerce.entities;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.Objects;
 
 @Entity
 @Table(name = "tb_payment")
@@ -16,7 +14,6 @@ public class Payment {
   @Id
   private Long id;
 
-  @Column(columnDefinition = "TIMESTAMP WITHOUT TIME ZONE")
   private Instant moment;
 
   @OneToOne
@@ -57,14 +54,17 @@ public class Payment {
 
   @Override
   public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
     if (!(o instanceof Payment payment)) {
       return false;
     }
-    return Objects.equals(id, payment.id);
+    return id != null && id.equals(payment.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(id);
+    return getClass().hashCode();
   }
 }

@@ -1,8 +1,10 @@
 package com.teste.dscommerce.dto;
 
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 
 public class ProductDTO {
 
@@ -14,11 +16,12 @@ public class ProductDTO {
   @Size(min = 10, message = "A descrição do produto deve ter no mínimo 10 caracteres")
   private String description;
   @Positive(message = "O preço do produto deve ser positivo")
-  private Double price;
+  @Digits(integer = 10, fraction = 2, message = "O preço deve ter no máximo 10 dígitos inteiros e 2 decimais")
+  private BigDecimal price;
   private String imgUrl;
 
 
-  public ProductDTO(Long id, String name, String description, Double price, String imgUrl) {
+  public ProductDTO(Long id, String name, String description, BigDecimal price, String imgUrl) {
     this.id = id;
     this.name = name;
     this.description = description;
@@ -50,11 +53,11 @@ public class ProductDTO {
     this.description = description;
   }
 
-  public Double getPrice() {
+  public BigDecimal getPrice() {
     return price;
   }
 
-  public void setPrice(Double price) {
+  public void setPrice(BigDecimal price) {
     this.price = price;
   }
 
@@ -66,4 +69,3 @@ public class ProductDTO {
     this.imgUrl = imgUrl;
   }
 }
-
