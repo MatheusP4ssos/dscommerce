@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class ProductDTO {
 
@@ -19,7 +21,10 @@ public class ProductDTO {
   @Digits(integer = 10, fraction = 2, message = "O preço deve ter no máximo 10 dígitos inteiros e 2 decimais")
   private BigDecimal price;
   private String imgUrl;
+  private Set<String> categories = new LinkedHashSet<>();
 
+  public ProductDTO() {
+  }
 
   public ProductDTO(Long id, String name, String description, BigDecimal price, String imgUrl) {
     this.id = id;
@@ -67,5 +72,13 @@ public class ProductDTO {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public Set<String> getCategories() {
+    return categories;
+  }
+
+  public void setCategories(Set<String> categories) {
+    this.categories = categories;
   }
 }

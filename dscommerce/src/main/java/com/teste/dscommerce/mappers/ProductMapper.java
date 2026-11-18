@@ -1,6 +1,7 @@
 package com.teste.dscommerce.mappers;
 
 import com.teste.dscommerce.dto.ProductDTO;
+import com.teste.dscommerce.entities.Category;
 import com.teste.dscommerce.entities.Product;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -13,4 +14,8 @@ public interface ProductMapper {
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "categories", ignore = true)
   Product toEntity(ProductDTO dto);
+
+  default String categoryToName(Category category) {
+    return category == null ? null : category.getName();
+  }
 }
