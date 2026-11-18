@@ -37,8 +37,8 @@ Serviços:
   - Usuário: `sa`
   - Senha: vazia
 
-O profile ativo por padrão é `test` (`application-test.properties`), que usa H2 em memória,
-`ddl-auto=create-drop` e recarrega o `data.sql` a cada inicialização.
+O profile ativo por padrão é `test` (`application-test.properties`), que usa H2 em memória e
+aplica as migrações do Flyway (`db/migration`) a cada inicialização, com `ddl-auto=validate`.
 
 ### Variáveis de ambiente
 
@@ -315,7 +315,9 @@ dscommerce/
 │   │   └── resources/
 │   │       ├── application.properties
 │   │       ├── application-test.properties
-│   │       └── data.sql
+│   │       └── db/migration/
+│   │           ├── V1__create_schema.sql
+│   │           └── V2__seed_data.sql
 │   └── test/java/com/teste/dscommerce/
 │       ├── DscommerceApplicationTests.java
 │       └── AuthIntegrationTests.java
@@ -368,13 +370,13 @@ Cobertura atual:
 | Alta | Pagamento duplicado para o mesmo pedido não é impedido | `PaymentService.java:47-55` | Concluído |
 | Alta | Dinheiro em `Double` | `Product.java:26`, `OrderItem.java:15`, `Order.java:100` | Concluído |
 | Alta | `Instant` mapeado como `TIMESTAMP WITHOUT TIME ZONE` | `Order.java:27`, `Payment.java:21` | Concluído |
-| Média | N+1 ao mapear pedidos em listagens | `OrderService.java:58-64`, `OrderMapper.java` | Pendente |
-| Média | `User.roles` em `FetchType.EAGER` | `User.java:36` | Pendente |
+| Média | N+1 ao mapear pedidos em listagens | `OrderService.java:58-64`, `OrderMapper.java` | Concluído |
+| Média | `User.roles` em `FetchType.EAGER` | `User.java:36` | Concluído |
 | Média | `OrderService.update` aceita `moment` do DTO e não valida transições de status | `OrderService.java:88-98` | Pendente |
 | Média | `equals/hashCode` inconsistente entre entidades e instáveis para ids nulos | `Category.java:53-62`, `OrderItemPK.java:38-50` | Concluído |
 | Média | `Role.authority` sem restrição de unicidade | `Role.java:17` | Concluído |
-| Média | Ausência de Flyway/Liquibase; seed com IDs implícitos | `data.sql`, `application-test.properties` | Pendente |
-| Média | Categorias existem no modelo, mas não são expostas na API | `ProductDTO.java`, `ProductMapper.java:13-15` | Pendente |
+| Média | Ausência de Flyway/Liquibase; seed com IDs implícitos | `data.sql`, `application-test.properties` | Concluído |
+| Média | Categorias existem no modelo, mas não são expostas na API | `ProductDTO.java`, `ProductMapper.java:13-15` | Concluído |
 | Baixa | `setSubTotal` deriva preço e divide por `quantity` (risco de NPE/divisão por zero) | `OrderItem.java:43-48` | Concluído |
 | Baixa | Listagem de itens ordenada por `quantity` | `OrderItemService.java:50` | Concluído |
 | Baixa | Ausência de `@Version` para concorrência otimista | `Order.java` | Concluído |
@@ -400,12 +402,14 @@ Cobertura atual:
 - [x] Unicidade de `Role.authority` (Fase 1) e `Payment.order_id` (PK via `@MapsId`).
 - [x] Adicionar `@Version` em `Order` (seed com `version = 0`).
 
-**Fase 3 - Performance e estrutura**
+**Fase 3 - Performance e estrutura** (concluída)
 
-- Adicionar `@EntityGraph` nas consultas de pedidos para eliminar N+1.
-- Avaliar `User.roles` como `LAZY` com `@EntityGraph` no login.
-- Introduzir Flyway/Liquibase e seeds reproduzíveis.
-- Decidir se categorias serão expostas na API ou removidas do modelo.
+- [x] Adicionar `@EntityGraph` nas consultas de pedidos para eliminar N+1
+  (`default_batch_fetch_size=100` para coleções).
+- [x] `User.roles` como `LAZY` com `@EntityGraph` nas consultas de usuário.
+- [x] Introduzir Flyway com migrations reproduzíveis (`V1__create_schema.sql`,
+  `V2__seed_data.sql`) e `ddl-auto=validate`.
+- [x] Expor categorias em `ProductDTO` (somente leitura).
 
 **Fase 4 - Evolução**
 
@@ -430,6 +434,8 @@ Cobertura atual:
   `equals/hashCode` e ordenação dos itens de pedido).
 - Correções da Fase 2 da revisão de JPA (valores monetários em `BigDecimal`, `Instant` com
   time zone, `equals/hashCode` padronizado e `@Version` em `Order`).
+- Correções da Fase 3 da revisão de JPA (`@EntityGraph` contra N+1, `User.roles` `LAZY`,
+  categorias expostas em `ProductDTO` e migrações Flyway com `ddl-auto=validate`).
 
 ## Observações e pendências conhecidas
 
@@ -438,7 +444,8 @@ Cobertura atual:
 - O H2 Console está liberado sem autenticação e deve ser desabilitado fora do ambiente local.
 - `application-test.properties` está em `src/main/resources`; para uso estritamente de testes,
   o local recomendado é `src/test/resources`.
-- Ainda não existe profile/configuração de PostgreSQL nem migrations.
+- As migrations Flyway foram escritas para H2 e PostgreSQL; ainda não existe um profile dedicado
+  de PostgreSQL (o driver está no `pom.xml`).
 - O segredo JWT padrão é apenas para desenvolvimento.
 - A ordenação das listagens é fixa por serviço (`name` para produtos/usuários, `moment` para
   pedidos e pagamentos).
