@@ -2,7 +2,6 @@ package com.teste.dscommerce.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
@@ -15,7 +14,6 @@ import java.util.Objects;
 public class Payment {
 
   @Id
-  @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
   private Long id;
 
   @Column(columnDefinition = "TIMESTAMP WITHOUT TIME ZONE")

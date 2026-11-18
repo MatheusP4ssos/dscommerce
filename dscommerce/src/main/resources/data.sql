@@ -133,21 +133,21 @@ INSERT INTO tb_product_category (product_id, category_id) VALUES (29, 1);  -- Jo
 -- 6. ORDERS (8 pedidos)
 -- =============================================
 INSERT INTO tb_order (moment, status, user_id) VALUES
-('2024-01-15 10:30:00', 3, 2);    -- Order 1: Maria - DELIVERED
+('2024-01-15 10:30:00', 'DELIVERED', 2);    -- Order 1: Maria - DELIVERED
 INSERT INTO tb_order (moment, status, user_id) VALUES
-('2024-02-20 14:15:00', 3, 3);    -- Order 2: Joao - DELIVERED
+('2024-02-20 14:15:00', 'DELIVERED', 3);    -- Order 2: Joao - DELIVERED
 INSERT INTO tb_order (moment, status, user_id) VALUES
-('2024-03-10 09:45:00', 2, 2);    -- Order 3: Maria - SHIPPED
+('2024-03-10 09:45:00', 'SHIPPED', 2);    -- Order 3: Maria - SHIPPED
 INSERT INTO tb_order (moment, status, user_id) VALUES
-('2024-04-05 16:20:00', 1, 4);    -- Order 4: Ana - PAID
+('2024-04-05 16:20:00', 'PAID', 4);    -- Order 4: Ana - PAID
 INSERT INTO tb_order (moment, status, user_id) VALUES
-('2024-05-12 11:00:00', 1, 5);    -- Order 5: Pedro - PAID
+('2024-05-12 11:00:00', 'PAID', 5);    -- Order 5: Pedro - PAID
 INSERT INTO tb_order (moment, status, user_id) VALUES
-('2024-06-18 13:30:00', 0, 3);    -- Order 6: Joao - WAITING_PAYMENT
+('2024-06-18 13:30:00', 'WAITING_PAYMENT', 3);    -- Order 6: Joao - WAITING_PAYMENT
 INSERT INTO tb_order (moment, status, user_id) VALUES
-('2024-07-22 08:00:00', 4, 4);    -- Order 7: Ana - CANCELED
+('2024-07-22 08:00:00', 'CANCELED', 4);    -- Order 7: Ana - CANCELED
 INSERT INTO tb_order (moment, status, user_id) VALUES
-('2024-08-01 17:45:00', 2, 2);    -- Order 8: Maria - SHIPPED
+('2024-08-01 17:45:00', 'SHIPPED', 2);    -- Order 8: Maria - SHIPPED
 
 -- =============================================
 -- 7. PAYMENTS (1:1 com cada Order)

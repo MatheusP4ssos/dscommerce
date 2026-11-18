@@ -40,12 +40,11 @@ public class OrderItemPK implements java.io.Serializable {
     if (!(o instanceof OrderItemPK that)) {
       return false;
     }
-    return Objects.equals(order, that.order) && Objects.equals(product,
-        that.product);
+    return Objects.equals(order, that.order) && Objects.equals(product, that.product);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(order, product);
+    return Objects.hash(order != null ? order.getId() : null, product != null ? product.getId() : null);
   }
 }

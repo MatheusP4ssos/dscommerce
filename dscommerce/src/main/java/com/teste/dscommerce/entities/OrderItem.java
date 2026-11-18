@@ -43,9 +43,6 @@ public class OrderItem {
   public Double getSubTotal() {
     return price * quantity;
   }
-  public void setSubTotal(Double subTotal) {
-    this.price = subTotal / quantity;
-  }
 
   public Order getOrder() {
     return id.getOrder();

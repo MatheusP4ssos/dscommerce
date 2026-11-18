@@ -25,7 +25,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -123,7 +122,7 @@ public class OrderService {
     return authentication == null ? null : authentication.getName();
   }
 
-  @Transactional(propagation = Propagation.SUPPORTS)
+  @Transactional()
   public void delete(Long id) {
     if (!repository.existsById(id)) {
       throw new ResourceNotFoundException("Recurso não encontrado: " + id);

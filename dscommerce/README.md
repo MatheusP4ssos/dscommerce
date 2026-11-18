@@ -359,38 +359,38 @@ Cobertura atual:
 
 ### Achados
 
-| Severidade | Achado | Local |
-|---|---|---|
-| Alta | Preço do item aceito do DTO em vez de derivado do produto | `OrderItemService.java:63`, `OrderItemService.java:74` |
-| Alta | `Propagation.SUPPORTS` em operações de escrita (delete não transacional) | `ProductService.java:63`, `UserService.java:104`, `OrderService.java:126`, `PaymentService.java:69`, `OrderItemService.java:82` |
-| Alta | `OrderStatus` sem `@Enumerated`, gravando ordinal | `Order.java:29` |
-| Alta | `Payment` com `@GeneratedValue` + `@MapsId` (semântica contraditória) | `Payment.java:17-26` |
-| Alta | Pagamento duplicado para o mesmo pedido não é impedido | `PaymentService.java:47-55` |
-| Alta | Dinheiro em `Double` | `Product.java:26`, `OrderItem.java:15`, `Order.java:100` |
-| Alta | `Instant` mapeado como `TIMESTAMP WITHOUT TIME ZONE` | `Order.java:27`, `Payment.java:21` |
-| Média | N+1 ao mapear pedidos em listagens | `OrderService.java:58-64`, `OrderMapper.java` |
-| Média | `User.roles` em `FetchType.EAGER` | `User.java:36` |
-| Média | `OrderService.update` aceita `moment` do DTO e não valida transições de status | `OrderService.java:88-98` |
-| Média | `equals/hashCode` inconsistente entre entidades e instáveis para ids nulos | `Category.java:53-62`, `OrderItemPK.java:38-50` |
-| Média | `Role.authority` sem restrição de unicidade | `Role.java:17` |
-| Média | Ausência de Flyway/Liquibase; seed com IDs implícitos | `data.sql`, `application-test.properties` |
-| Média | Categorias existem no modelo, mas não são expostas na API | `ProductDTO.java`, `ProductMapper.java:13-15` |
-| Baixa | `setSubTotal` deriva preço e divide por `quantity` (risco de NPE/divisão por zero) | `OrderItem.java:43-48` |
-| Baixa | Listagem de itens ordenada por `quantity` | `OrderItemService.java:50` |
-| Baixa | Ausência de `@Version` para concorrência otimista | `Order.java` |
-| Baixa | `imgUrl` sem tamanho explícito (default 255) | `Product.java:27` |
-| Baixa | Estilo: `GenerationType` qualificado em alguns pontos, `Serializable` com FQN, pacote `com.teste` | Várias entidades |
+| Severidade | Achado | Local | Status |
+|---|---|---|---|
+| Alta | Preço do item aceito do DTO em vez de derivado do produto | `OrderItemService.java:63`, `OrderItemService.java:74` | Concluído |
+| Alta | `Propagation.SUPPORTS` em operações de escrita (delete não transacional) | `ProductService.java:63`, `UserService.java:104`, `OrderService.java:126`, `PaymentService.java:69`, `OrderItemService.java:82` | Concluído |
+| Alta | `OrderStatus` sem `@Enumerated`, gravando ordinal | `Order.java:29` | Concluído |
+| Alta | `Payment` com `@GeneratedValue` + `@MapsId` (semântica contraditória) | `Payment.java:17-26` | Concluído |
+| Alta | Pagamento duplicado para o mesmo pedido não é impedido | `PaymentService.java:47-55` | Concluído |
+| Alta | Dinheiro em `Double` | `Product.java:26`, `OrderItem.java:15`, `Order.java:100` | Pendente |
+| Alta | `Instant` mapeado como `TIMESTAMP WITHOUT TIME ZONE` | `Order.java:27`, `Payment.java:21` | Pendente |
+| Média | N+1 ao mapear pedidos em listagens | `OrderService.java:58-64`, `OrderMapper.java` | Pendente |
+| Média | `User.roles` em `FetchType.EAGER` | `User.java:36` | Pendente |
+| Média | `OrderService.update` aceita `moment` do DTO e não valida transições de status | `OrderService.java:88-98` | Pendente |
+| Média | `equals/hashCode` inconsistente entre entidades e instáveis para ids nulos | `Category.java:53-62`, `OrderItemPK.java:38-50` | Concluído |
+| Média | `Role.authority` sem restrição de unicidade | `Role.java:17` | Concluído |
+| Média | Ausência de Flyway/Liquibase; seed com IDs implícitos | `data.sql`, `application-test.properties` | Pendente |
+| Média | Categorias existem no modelo, mas não são expostas na API | `ProductDTO.java`, `ProductMapper.java:13-15` | Pendente |
+| Baixa | `setSubTotal` deriva preço e divide por `quantity` (risco de NPE/divisão por zero) | `OrderItem.java:43-48` | Concluído |
+| Baixa | Listagem de itens ordenada por `quantity` | `OrderItemService.java:50` | Concluído |
+| Baixa | Ausência de `@Version` para concorrência otimista | `Order.java` | Pendente |
+| Baixa | `imgUrl` sem tamanho explícito (default 255) | `Product.java:27` | Pendente |
+| Baixa | Estilo: `GenerationType` qualificado em alguns pontos, `Serializable` com FQN, pacote `com.teste` | Várias entidades | Pendente |
 
 ### Plano de correção
 
-**Fase 1 - Risco e baixo esforço**
+**Fase 1 - Risco e baixo esforço** (parcialmente concluída)
 
-- Derivar preço sempre de `Product` em `OrderItemService`.
-- Trocar `Propagation.SUPPORTS` por `REQUIRED` nos deletes.
-- Remover `setSubTotal`.
-- Impedir pagamento duplicado e sincronizar status do pedido ao pagar.
-- Validar transições de status e ignorar `moment` no update.
-- Aplicar `@Enumerated(EnumType.STRING)` e ajustar o `data.sql`.
+- [x] Derivar preço sempre de `Product` em `OrderItemService`.
+- [x] Trocar `Propagation.SUPPORTS` por `REQUIRED` nos deletes.
+- [x] Remover `setSubTotal`.
+- [x] Impedir pagamento duplicado (sincronizar status do pedido ao pagar ainda pendente).
+- [ ] Validar transições de status e ignorar `moment` no update.
+- [x] Aplicar `@Enumerated(EnumType.STRING)` e ajustar o `data.sql`.
 
 **Fase 2 - Modelagem e consistência**
 
@@ -425,6 +425,9 @@ Cobertura atual:
 - Hash BCrypt válido para os usuários do seed.
 - Testes de integração de autenticação e autorização.
 - Driver PostgreSQL adicionado para evolução do ambiente de banco.
+- Correções da Fase 1 da revisão de JPA (preço derivado do produto, `@Enumerated(STRING)`,
+  `@MapsId` no pagamento, bloqueio de pagamento duplicado, unicidade de `Role.authority`,
+  `equals/hashCode` e ordenação dos itens de pedido).
 
 ## Observações e pendências conhecidas
 

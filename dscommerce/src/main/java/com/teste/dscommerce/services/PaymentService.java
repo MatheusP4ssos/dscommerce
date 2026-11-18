@@ -14,7 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -32,9 +31,9 @@ public class PaymentService {
 
   @Transactional(readOnly = true)
   public PaymentDTO findById(Long id) {
-    Payment payment = repository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Id não encontrado: " + id));
-    return mapper.toDTO(payment);
+    Payment entity = repository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Recurso não encontrado: " + id));
+    return mapper.toDTO(entity);
   }
 
   @Transactional(readOnly = true)
@@ -47,6 +46,9 @@ public class PaymentService {
   public PaymentDTO insert(PaymentDTO dto) {
     if (!orderRepository.existsById(dto.getOrderId())) {
       throw new ResourceNotFoundException("Pedido não encontrado: " + dto.getOrderId());
+    }
+    if (repository.existsByOrderId(dto.getOrderId())) {
+      throw new DatabaseException("Pagamento já existe para o pedido: " + dto.getOrderId());
     }
     Payment entity = mapper.toEntity(dto);
     entity.setOrder(orderRepository.getReferenceById(dto.getOrderId()));
@@ -66,7 +68,7 @@ public class PaymentService {
     }
   }
 
-  @Transactional(propagation = Propagation.SUPPORTS)
+  @Transactional()
   public void delete(Long id) {
     if (!repository.existsById(id)) {
       throw new ResourceNotFoundException("Recurso não encontrado: " + id);

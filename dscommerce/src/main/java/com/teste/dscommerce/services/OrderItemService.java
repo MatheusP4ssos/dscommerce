@@ -18,7 +18,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -47,7 +46,7 @@ public class OrderItemService {
 
   @Transactional(readOnly = true)
   public Page<OrderItemDTO> findAll(Integer page, Integer size) {
-    Pageable pageable = PageRequest.of(page, size, Sort.by("quantity"));
+    Pageable pageable = PageRequest.of(page, size,  Sort.by("id.order.moment").descending().and(Sort.by("id.product.name")));
     return repository.findAll(pageable).map(mapper::toDTO);
   }
 
@@ -56,13 +55,15 @@ public class OrderItemService {
     if (!orderRepository.existsById(dto.getOrderId())) {
       throw new ResourceNotFoundException("Pedido não encontrado: " + dto.getOrderId());
     }
-    if (!productRepository.existsById(dto.getProductId())) {
-      throw new ResourceNotFoundException("Produto não encontrado: " + dto.getProductId());
-    }
-    OrderItem entity = new OrderItem(orderRepository.getReferenceById(dto.getOrderId()),
-        productRepository.getReferenceById(dto.getProductId()), dto.getQuantity(), dto.getPrice());
-    entity = repository.save(entity);
-    return mapper.toDTO(entity);
+
+    Product product = productRepository.findById(dto.getProductId())
+        .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + dto.getProductId()));
+
+    Order order = orderRepository.getReferenceById(dto.getOrderId());
+
+    OrderItem item = new OrderItem(order, product, dto.getQuantity(), product.getPrice());
+    item = repository.save(item);
+    return mapper.toDTO(item);
   }
 
   @Transactional
@@ -71,7 +72,6 @@ public class OrderItemService {
       OrderItemPK pk = buildPk(orderId, productId);
       OrderItem entity = repository.getReferenceById(pk);
       entity.setQuantity(dto.getQuantity());
-      entity.setPrice(dto.getPrice());
       entity = repository.save(entity);
       return mapper.toDTO(entity);
     } catch (EntityNotFoundException e) {
@@ -79,7 +79,7 @@ public class OrderItemService {
     }
   }
 
-  @Transactional(propagation = Propagation.SUPPORTS)
+  @Transactional()
   public void delete(Long orderId, Long productId) {
     OrderItemPK pk = buildPk(orderId, productId);
     if (!repository.existsById(pk)) {
