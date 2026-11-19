@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-  @EntityGraph(attributePaths = {"items", "items.product", "client", "payment"})
+  @EntityGraph(attributePaths = {"items", "items.id.product", "client", "payment"})
   Optional<Order> findById(Long id);
 
   @EntityGraph(attributePaths = {"client", "payment"})
