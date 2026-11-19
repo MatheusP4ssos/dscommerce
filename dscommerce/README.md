@@ -106,6 +106,7 @@ As senhas do seed são armazenadas como hash BCrypt em `data.sql`.
 |---|---|---|
 | `/auth/login` | `POST` | Público |
 | `/users` | `POST` | Público (sempre cria `ROLE_CLIENT`) |
+| `/users/me` | `GET` | `ROLE_ADMIN` (retorna o próprio usuário) |
 | `/users/**` | `GET`, `PUT`, `DELETE` | `ROLE_ADMIN` |
 | `/products/**` | `GET` | Público |
 | `/products/**` | `POST`, `PUT`, `DELETE` | `ROLE_ADMIN` |
@@ -206,6 +207,7 @@ curl -X POST "http://localhost:8081/products" \
 | `GET` | `/users/{id}` | Busca por ID (ADMIN) | `200` / `404` |
 | `GET` | `/users/email/{email}` | Busca por email (ADMIN) | `200` / `404` |
 | `GET` | `/users/name/{name}` | Busca por nome, paginada (ADMIN) | `200` / `404` |
+| `GET` | `/users/me` | Retorna o usuário autenticado (ADMIN) | `200` / `401` / `403` |
 | `POST` | `/users` | Cadastro público (sempre `ROLE_CLIENT`) | `201` + `Location` / `422` / `400` |
 | `PUT` | `/users/{id}` | Atualiza usuário (ADMIN) | `200` / `404` / `422` |
 | `DELETE` | `/users/{id}` | Remove usuário (ADMIN) | `204` / `404` / `400` |
@@ -345,7 +347,8 @@ dscommerce/
 Cobertura atual:
 
 - `AuthIntegrationTests`: login com sucesso, senha inválida (401), rota protegida sem token (401),
-  produto público (200), cliente bloqueado em `/users` (403), admin liberado em `/users` (200).
+  produto público (200), cliente bloqueado em `/users` (403), admin liberado em `/users` (200) e
+  `/users/me` com admin (200), cliente (403) e sem token (401).
 - `DscommerceApplicationTests`: carregamento do contexto Spring.
 
 ## Revisão de JPA: diagnóstico e plano
@@ -436,6 +439,8 @@ Cobertura atual:
   time zone, `equals/hashCode` padronizado e `@Version` em `Order`).
 - Correções da Fase 3 da revisão de JPA (`@EntityGraph` contra N+1, `User.roles` `LAZY`,
   categorias expostas em `ProductDTO` e migrações Flyway com `ddl-auto=validate`).
+- Endpoint `GET /users/me`, restrito a `ROLE_ADMIN`, para consultar o próprio usuário a partir
+  do `sub` do JWT.
 
 ## Observações e pendências conhecidas
 

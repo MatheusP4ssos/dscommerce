@@ -19,9 +19,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,7 +67,8 @@ public class UserService {
   @Transactional(readOnly = true)
   public Page<UserDTO> findAllByName(String name, Integer page, Integer size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
-    Page<UserDTO> result = repository.findByNameContainingIgnoreCase(name, pageable).map(mapper::toDTO);
+    Page<UserDTO> result = repository.findByNameContainingIgnoreCase(name, pageable)
+        .map(mapper::toDTO);
 
     if (result.isEmpty()) {
       throw new UserNameNotFoundException(name);
@@ -139,11 +142,29 @@ public class UserService {
     if (authorities != null) {
       for (String authority : authorities) {
         Role role = roleRepository.findByAuthority(authority)
-            .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado: " + authority));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Perfil não encontrado: " + authority));
         roles.add(role);
       }
     }
     return roles;
+  }
+
+  protected User getAuthenticatedUser() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwtPrincipal)) {
+      throw new AuthenticationCredentialsNotFoundException("Usuário autenticado não encontrado");
+    }
+    String username = jwtPrincipal.getSubject();
+
+    return repository.findByEmail(username)
+        .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + username));
+  }
+
+  @Transactional(readOnly = true)
+  public UserDTO getMe() {
+    User user = getAuthenticatedUser();
+    return mapper.toDTO(user);
   }
 }
 

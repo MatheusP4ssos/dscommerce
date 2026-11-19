@@ -46,6 +46,12 @@ public class UserController {
       return ResponseEntity.ok(dto);
   }
 
+  @GetMapping(value = "/me")
+  public ResponseEntity<UserDTO> getMe() {
+      UserDTO dto = userService.getMe();
+      return ResponseEntity.ok(dto);
+  }
+
   @GetMapping
   public ResponseEntity<Page<UserDTO>> findAll(Pageable pageable) {
     Page<UserDTO> dto = userService.findAll(pageable.getPageNumber(), pageable.getPageSize());

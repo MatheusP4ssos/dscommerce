@@ -78,4 +78,26 @@ class AuthIntegrationTests {
     mockMvc.perform(get("/users").header("Authorization", "Bearer " + token))
         .andExpect(status().isOk());
   }
+
+  @Test
+  void authenticatedUserEndpointRequiresAuthentication() throws Exception {
+    mockMvc.perform(get("/users/me"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void clientCannotAccessAuthenticatedUserEndpoint() throws Exception {
+    String token = login("maria@email.com", "12345678");
+    mockMvc.perform(get("/users/me").header("Authorization", "Bearer " + token))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void adminCanAccessAuthenticatedUserEndpoint() throws Exception {
+    String token = login("admin@dscommerce.com", "12345678");
+    mockMvc.perform(get("/users/me").header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.email").value("admin@dscommerce.com"))
+        .andExpect(jsonPath("$.roles[0]").value("ROLE_ADMIN"));
+  }
 }
