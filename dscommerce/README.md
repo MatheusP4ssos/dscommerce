@@ -110,6 +110,7 @@ As senhas do seed são armazenadas como hash BCrypt em `data.sql`.
 | `/users/me` | `GET` | `ROLE_ADMIN` (retorna o próprio usuário) |
 | `/users/**` | `GET`, `PUT`, `DELETE` | `ROLE_ADMIN` |
 | `/products/**` | `GET` | Público |
+| `/products/category/**` | `GET` | Público (filtra por categoria) |
 | `/products/**` | `POST`, `PUT`, `DELETE` | `ROLE_ADMIN` |
 | `/categories/**` | `GET` | Público |
 | `/categories/**` | `POST`, `PUT`, `DELETE` | `ROLE_ADMIN` |
@@ -180,6 +181,7 @@ Regras de posse aplicadas no `OrderService`:
 | Método | Rota | Descrição | Retorno |
 |---|---|---|---|
 | `GET` | `/products` | Lista paginada, ordenada por `name` | `200` com `Page<ProductMinDTO>` |
+| `GET` | `/products/category/{categoryId}` | Lista paginada de uma categoria (público) | `200` / `404` |
 | `GET` | `/products/{id}` | Busca por ID | `200` / `404` |
 | `POST` | `/products` | Cria produto (ADMIN) | `201` + `Location` / `422` |
 | `PUT` | `/products/{id}` | Atualiza produto (ADMIN) | `200` / `404` / `422` |
@@ -187,6 +189,10 @@ Regras de posse aplicadas no `OrderService`:
 
 ```bash
 curl "http://localhost:8081/products?page=0&size=10"
+```
+
+```bash
+curl "http://localhost:8081/products/category/1?page=0&size=10"
 ```
 
 ```bash
@@ -345,6 +351,7 @@ dscommerce/
 │       ├── DscommerceApplicationTests.java
 │       ├── AuthIntegrationTests.java
 │       ├── CategoryIntegrationTests.java
+│       ├── ProductCategoryIntegrationTests.java
 │       └── security/JwtConfigTest.java
 ├── pom.xml
 ├── mvnw
@@ -374,6 +381,8 @@ Cobertura atual:
   `/users/me` com admin (200), cliente (403) e sem token (401).
 - `CategoryIntegrationTests`: listagem pública (200), criação com sem token (401), cliente (403) e
   admin (201), nome em branco (422) e remoção com admin (204) e ID inexistente (404).
+- `ProductCategoryIntegrationTests`: filtro público e paginado por categoria (200) e categoria
+  inexistente (404).
 - `JwtConfigTest`: chave efêmera diferente a cada chamada, segredo ausente/fraco rejeitado e
   segredo Base64 válido aceito.
 - `DscommerceApplicationTests`: carregamento do contexto Spring.

@@ -6,6 +6,7 @@ import com.teste.dscommerce.entities.Product;
 import com.teste.dscommerce.exceptions.DatabaseException;
 import com.teste.dscommerce.exceptions.ResourceNotFoundException;
 import com.teste.dscommerce.mappers.ProductMapper;
+import com.teste.dscommerce.repositories.CategoryRepository;
 import com.teste.dscommerce.repositories.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,10 +23,13 @@ public class ProductService {
 
   private final ProductRepository repository;
   private final ProductMapper mapper;
+  private final CategoryRepository categoryRepository;
 
-  public ProductService(ProductRepository repository, ProductMapper mapper) {
+
+  public ProductService(ProductRepository repository, ProductMapper mapper, CategoryRepository categoryRepository) {
     this.repository = repository;
     this.mapper = mapper;
+    this.categoryRepository = categoryRepository;
   }
 
   @Transactional(readOnly = true)
@@ -39,6 +43,16 @@ public class ProductService {
   public Page<ProductMinDTO> findAll(int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
     Page<Product> products = repository.findAll(pageable);
+    return products.map(mapper::toMinDTO);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<ProductMinDTO> findByCategory(Long categoryId, int page, int size) {
+    if (!categoryRepository.existsById(categoryId)) {
+      throw new ResourceNotFoundException("Categoria não encontrada: " + categoryId);
+    }
+    Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
+    Page<Product> products = repository.findByCategory(categoryId, pageable);
     return products.map(mapper::toMinDTO);
   }
 

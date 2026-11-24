@@ -28,6 +28,12 @@ public class ProductController {
   @Autowired
   private ProductService productService;
 
+  @GetMapping(value = "/category/{categoryId}")
+  public ResponseEntity<Page<ProductMinDTO>> findByCategory(@PathVariable Long categoryId, Pageable pageable) {
+    Page<ProductMinDTO> dto = productService.findByCategory(categoryId, pageable.getPageNumber(), pageable.getPageSize());
+    return ResponseEntity.ok(dto);
+  }
+
   @GetMapping(value = "/{id}")
   public ResponseEntity<?> findById(@PathVariable Long id) {
 
