@@ -16,6 +16,8 @@ public class OrderItemDTO {
   @Positive(message = "Quantidade deve ser positiva")
   private Integer quantity;
 
+  private String imageUrl;
+
   @PositiveOrZero(message = "Preço não pode ser negativo")
   private BigDecimal price;
 
@@ -24,10 +26,11 @@ public class OrderItemDTO {
   public OrderItemDTO() {
   }
 
-  public OrderItemDTO(Long orderId, Long productId, Integer quantity, BigDecimal price, String productName) {
+  public OrderItemDTO(Long orderId, Long productId, Integer quantity, String imageUrl, BigDecimal price, String productName) {
     this.orderId = orderId;
     this.productId = productId;
     this.quantity = quantity;
+    this.imageUrl = imageUrl;
     this.price = price;
     this.productName = productName;
   }
@@ -70,5 +73,13 @@ public class OrderItemDTO {
 
   public void setPrice(BigDecimal price) {
     this.price = price;
+  }
+
+  public String getImageUrl() {
+    return imageUrl;
+  }
+
+  public void setImageUrl(String imageUrl) {
+    this.imageUrl = imageUrl;
   }
 }

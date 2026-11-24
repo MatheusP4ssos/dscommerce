@@ -2,12 +2,10 @@ package com.teste.dscommerce.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class OrderInsertDTO {
 
-  @NotNull(message = "Campo obrigatório")
   private Long clientId;
 
   @Valid

@@ -2,6 +2,7 @@ package com.teste.dscommerce.controllers;
 
 import com.teste.dscommerce.dto.CustomError;
 import com.teste.dscommerce.dto.ProductDTO;
+import com.teste.dscommerce.dto.ProductMinDTO;
 import com.teste.dscommerce.exceptions.ResourceNotFoundException;
 import com.teste.dscommerce.services.ProductService;
 import jakarta.validation.Valid;
@@ -35,8 +36,8 @@ public class ProductController {
   }
 
   @GetMapping
-  public ResponseEntity<Page<ProductDTO>> findAll(Pageable pageable) {
-    Page<ProductDTO> dto = productService.findAll(pageable.getPageNumber(), pageable.getPageSize());
+  public ResponseEntity<Page<ProductMinDTO>> findAll(Pageable pageable) {
+    Page<ProductMinDTO> dto = productService.findAll(pageable.getPageNumber(), pageable.getPageSize());
     return ResponseEntity.ok(dto);
   }
 

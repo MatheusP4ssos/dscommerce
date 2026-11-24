@@ -1,6 +1,7 @@
 package com.teste.dscommerce.dto;
 
 import com.teste.dscommerce.entities.OrderStatus;
+import jakarta.validation.constraints.NotEmpty;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -11,6 +12,7 @@ private Instant moment;
 private OrderStatus orderStatus;
 private Long clientId;
 private String clientName;
+@NotEmpty(message = "Deve ter pelo menos um item")
 private List<OrderItemDTO> items;
 private PaymentDTO payment;
 private BigDecimal total;

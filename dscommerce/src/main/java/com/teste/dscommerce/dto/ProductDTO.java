@@ -2,6 +2,7 @@ package com.teste.dscommerce.dto;
 
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ public class ProductDTO {
   @Digits(integer = 10, fraction = 2, message = "O preço deve ter no máximo 10 dígitos inteiros e 2 decimais")
   private BigDecimal price;
   private String imgUrl;
+  @NotEmpty(message = "O produto deve ter pelo menos uma categoria")
   private Set<String> categories = new LinkedHashSet<>();
 
   public ProductDTO() {

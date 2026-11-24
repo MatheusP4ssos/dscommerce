@@ -44,13 +44,14 @@ aplica as migrações do Flyway (`db/migration`) a cada inicialização, com `dd
 
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `JWT_SECRET` | valor de desenvolvimento no `application.properties` | Chave Base64 usada para assinar o JWT (mínimo 256 bits em HS256) |
+| `JWT_SECRET` | obrigatório fora do perfil `test` | Chave Base64 usada para assinar o JWT (mínimo 256 bits em HS256) |
 | `JWT_DURATION` | `900` | Validade do token em segundos |
 | `JWT_ISSUER` | `dscommerce` | Claim `iss` do token |
 | `CORS_ORIGINS` | `http://localhost:3000` | Origens permitidas, separadas por vírgula |
 
-O valor padrão de `JWT_SECRET` existe apenas para facilitar o ambiente local. Em produção
-defina a variável com um segredo forte e rotacionável.
+No perfil `test` (uso local) a chave é gerada aleatoriamente a cada subida, então tokens
+antigos deixam de ser aceitos após reiniciar a aplicação; `JWT_SECRET` é ignorado nesse perfil.
+Fora dele, a aplicação falha no startup se `JWT_SECRET` não estiver definido.
 
 ## Autenticação e autorização (JWT)
 
@@ -451,6 +452,6 @@ Cobertura atual:
   o local recomendado é `src/test/resources`.
 - As migrations Flyway foram escritas para H2 e PostgreSQL; ainda não existe um profile dedicado
   de PostgreSQL (o driver está no `pom.xml`).
-- O segredo JWT padrão é apenas para desenvolvimento.
+- No perfil `test` a chave JWT é efêmera; em produção exija `JWT_SECRET` via variável de ambiente.
 - A ordenação das listagens é fixa por serviço (`name` para produtos/usuários, `moment` para
   pedidos e pagamentos).

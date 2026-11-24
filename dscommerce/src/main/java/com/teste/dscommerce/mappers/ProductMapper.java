@@ -1,6 +1,8 @@
 package com.teste.dscommerce.mappers;
 
+import com.teste.dscommerce.dto.CetegoryDTO;
 import com.teste.dscommerce.dto.ProductDTO;
+import com.teste.dscommerce.dto.ProductMinDTO;
 import com.teste.dscommerce.entities.Category;
 import com.teste.dscommerce.entities.Product;
 import org.mapstruct.Mapper;
@@ -10,6 +12,12 @@ import org.mapstruct.Mapping;
 public interface ProductMapper {
 
   ProductDTO toDTO(Product entity);
+
+  ProductMinDTO toMinDTO(Product entity);
+
+  CetegoryDTO toDTO(Category entity);
+
+  Category toEntity(CetegoryDTO dto);
 
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "categories", ignore = true)

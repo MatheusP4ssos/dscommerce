@@ -64,14 +64,13 @@ public class OrderService {
 
   @Transactional
   public OrderDTO insert(OrderInsertDTO dto) {
-    Long clientId = resolveClientId(dto.getClientId());
-    if (!userRepository.existsById(clientId)) {
-      throw new ResourceNotFoundException("Cliente não encontrado: " + clientId);
-    }
+    User authenticatedUser = getAuthenticatedUser();
+
     Order entity = new Order();
     entity.setMoment(Instant.now());
     entity.setStatus(OrderStatus.WAITING_PAYMENT);
-    entity.setClient(userRepository.getReferenceById(clientId));
+    entity.setClient(authenticatedUser);
+
     for (OrderItemInsertDTO itemDto : dto.getItems()) {
       Product product = productRepository.findById(itemDto.getProductId())
           .orElseThrow(() -> new ResourceNotFoundException(
@@ -81,6 +80,17 @@ public class OrderService {
     }
     entity = repository.save(entity);
     return mapper.toDTO(entity);
+  }
+
+  private User getAuthenticatedUser() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null || authentication.getName() == null) {
+      throw new ResourceNotFoundException("Usuário não autenticado");
+    }
+
+    return userRepository.findByEmail(authentication.getName())
+        .orElseThrow(() -> new ResourceNotFoundException(
+            "Usuário autenticado não encontrado: " + authentication.getName()));
   }
 
   @Transactional
@@ -94,21 +104,6 @@ public class OrderService {
     } catch (EntityNotFoundException e) {
       throw new ResourceNotFoundException("Recurso não encontrado: " + id);
     }
-  }
-
-  private Long resolveClientId(Long requestedClientId) {
-    if (isCurrentUserAdmin()) {
-      if (requestedClientId == null) {
-        throw new ResourceNotFoundException("Cliente não informado");
-      }
-      return requestedClientId;
-    }
-    User user = userRepository.findByEmail(currentUsername())
-        .orElseThrow(() -> new ResourceNotFoundException("Cliente autenticado não encontrado"));
-    if (requestedClientId != null && !requestedClientId.equals(user.getId())) {
-      throw new AccessDeniedException("Não é permitido criar pedido para outro cliente");
-    }
-    return user.getId();
   }
 
   private boolean isCurrentUserAdmin() {

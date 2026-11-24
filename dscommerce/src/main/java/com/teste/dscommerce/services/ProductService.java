@@ -1,6 +1,7 @@
 package com.teste.dscommerce.services;
 
 import com.teste.dscommerce.dto.ProductDTO;
+import com.teste.dscommerce.dto.ProductMinDTO;
 import com.teste.dscommerce.entities.Product;
 import com.teste.dscommerce.exceptions.DatabaseException;
 import com.teste.dscommerce.exceptions.ResourceNotFoundException;
@@ -35,9 +36,10 @@ public class ProductService {
   }
 
   @Transactional(readOnly = true)
-  public Page<ProductDTO> findAll(Integer page, Integer size) {
+  public Page<ProductMinDTO> findAll(int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
-    return repository.findAll(pageable).map(mapper::toDTO);
+    Page<Product> products = repository.findAll(pageable);
+    return products.map(mapper::toMinDTO);
   }
 
   @Transactional

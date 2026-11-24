@@ -16,7 +16,7 @@ public class SwaggerConfig {
                         .version("1.0")
                         .description("API para gerenciamento de e-commerce")
                         .contact(new Contact()
-                                .name("Seu Nome")
-                                .email("seu@email.com")));
+                                .name("Matheus Holanda Passos")
+                                .email("matheus.holanda@email.com")));
     }
 }
