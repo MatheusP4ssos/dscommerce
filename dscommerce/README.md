@@ -111,6 +111,8 @@ As senhas do seed são armazenadas como hash BCrypt em `data.sql`.
 | `/users/**` | `GET`, `PUT`, `DELETE` | `ROLE_ADMIN` |
 | `/products/**` | `GET` | Público |
 | `/products/**` | `POST`, `PUT`, `DELETE` | `ROLE_ADMIN` |
+| `/categories/**` | `GET` | Público |
+| `/categories/**` | `POST`, `PUT`, `DELETE` | `ROLE_ADMIN` |
 | `/orders` | `POST` | Autenticado |
 | `/orders/**` | `GET` | Autenticado (cliente vê apenas os próprios) |
 | `/orders/**` | `PUT`, `DELETE` | `ROLE_ADMIN` |
@@ -124,8 +126,7 @@ Regras de posse aplicadas no `OrderService`:
 
 - `GET /orders/{id}`: admin ou dono do pedido; caso contrário `403`.
 - `GET /orders`: admin recebe todos; cliente recebe apenas os seus.
-- `POST /orders`: admin pode informar qualquer `clientId`; cliente só pode informar o próprio
-  `clientId` (e o campo é obrigatório por validação).
+- `POST /orders`: o pedido sempre pertence ao usuário autenticado; `clientId` é ignorado.
 
 ### Respostas de erro de segurança
 
@@ -178,7 +179,7 @@ Regras de posse aplicadas no `OrderService`:
 
 | Método | Rota | Descrição | Retorno |
 |---|---|---|---|
-| `GET` | `/products` | Lista paginada, ordenada por `name` | `200` com `Page<ProductDTO>` |
+| `GET` | `/products` | Lista paginada, ordenada por `name` | `200` com `Page<ProductMinDTO>` |
 | `GET` | `/products/{id}` | Busca por ID | `200` / `404` |
 | `POST` | `/products` | Cria produto (ADMIN) | `201` + `Location` / `422` |
 | `PUT` | `/products/{id}` | Atualiza produto (ADMIN) | `200` / `404` / `422` |
@@ -198,6 +199,25 @@ curl -X POST "http://localhost:8081/products" \
     "price": 249.90,
     "imgUrl": "https://exemplo.com/mouse.jpg"
   }'
+```
+
+### Categorias
+
+| Método | Rota | Descrição | Retorno |
+|---|---|---|---|
+| `GET` | `/categories` | Lista todas as categorias (público) | `200` com `List<CategoryDTO>` |
+| `POST` | `/categories` | Cria categoria (ADMIN) | `201` + `Location` / `422` |
+| `DELETE` | `/categories/{id}` | Remove categoria (ADMIN) | `204` / `404` / `400` |
+
+```bash
+curl "http://localhost:8081/categories"
+```
+
+```bash
+curl -X POST "http://localhost:8081/categories" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Informatica" }'
 ```
 
 ### Usuários
@@ -244,13 +264,13 @@ curl -X POST "http://localhost:8081/orders" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "clientId": 2,
     "items": [
       { "productId": 1, "quantity": 2 }
     ]
   }'
 ```
 
+O cliente do pedido é sempre o usuário autenticado; o campo `clientId`, se enviado, é ignorado.
 O preço do item é sempre obtido do produto no momento da criação; o total é calculado a
 partir dos itens. O status inicial é `WAITING_PAYMENT`.
 
@@ -323,7 +343,9 @@ dscommerce/
 │   │           └── V2__seed_data.sql
 │   └── test/java/com/teste/dscommerce/
 │       ├── DscommerceApplicationTests.java
-│       └── AuthIntegrationTests.java
+│       ├── AuthIntegrationTests.java
+│       ├── CategoryIntegrationTests.java
+│       └── security/JwtConfigTest.java
 ├── pom.xml
 ├── mvnw
 └── mvnw.cmd
@@ -350,6 +372,10 @@ Cobertura atual:
 - `AuthIntegrationTests`: login com sucesso, senha inválida (401), rota protegida sem token (401),
   produto público (200), cliente bloqueado em `/users` (403), admin liberado em `/users` (200) e
   `/users/me` com admin (200), cliente (403) e sem token (401).
+- `CategoryIntegrationTests`: listagem pública (200), criação com sem token (401), cliente (403) e
+  admin (201), nome em branco (422) e remoção com admin (204) e ID inexistente (404).
+- `JwtConfigTest`: chave efêmera diferente a cada chamada, segredo ausente/fraco rejeitado e
+  segredo Base64 válido aceito.
 - `DscommerceApplicationTests`: carregamento do contexto Spring.
 
 ## Revisão de JPA: diagnóstico e plano

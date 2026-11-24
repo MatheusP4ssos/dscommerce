@@ -92,6 +92,8 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/orders/**").authenticated()
             .requestMatchers(HttpMethod.PUT, "/orders/**").hasRole("ADMIN")
             .requestMatchers(HttpMethod.DELETE, "/orders/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
+            .requestMatchers("/categories/**").hasRole("ADMIN")
             .requestMatchers("/payments/**").hasRole("ADMIN")
             .requestMatchers("/order-items/**").hasRole("ADMIN")
             .anyRequest().authenticated())
