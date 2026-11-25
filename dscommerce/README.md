@@ -506,3 +506,9 @@ Arquitetura: Render Free (Docker) + Supabase Free somente como Postgres. Fronten
 
 Homologação validada localmente via Docker + Supabase: `/actuator/health`, login do admin com
 `ADMIN_PASSWORD`, `/products`, `/categories` e `/users/me`. Item 6 permanece aberto até o deploy no Render.
+
+Deploy manual no Render: criar Web Service com Runtime Docker, Root Directory `dscommerce`, Branch
+`main`, Health Check Path `/actuator/health` e Compute Plan Free. Definir env vars
+`SPRING_PROFILES_ACTIVE=prod`, `DATABASE_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`,
+`ADMIN_PASSWORD` e `CORS_ORIGINS`. Não definir `PORT`: o Render injeta o valor e o app já usa
+`server.port=${PORT:8081}`. O perfil `prod` desabilita Swagger/OpenAPI.
