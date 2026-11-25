@@ -36,3 +36,7 @@ build/
 data/
 *.db
 *.lock.db
+
+### Ambientes locais ###
+.env.homolog
+.env.prod

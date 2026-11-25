@@ -120,6 +120,7 @@ As senhas do seed são armazenadas como hash BCrypt em `data.sql`.
 | `/payments/**` | Todos | `ROLE_ADMIN` |
 | `/order-items/**` | Todos | `ROLE_ADMIN` |
 | `/v3/api-docs/**`, `/swagger-ui/**`, `/swagger-ui.html` | `GET` | Público |
+| `/actuator/health` | `GET` | Público |
 | `/h2-console/**` | Todos | Público (apenas ambiente local) |
 | Qualquer outra rota | Todos | Autenticado |
 
@@ -490,3 +491,18 @@ Cobertura atual:
 - No perfil `test` a chave JWT é efêmera; em produção exija `JWT_SECRET` via variável de ambiente.
 - A ordenação das listagens é fixa por serviço (`name` para produtos/usuários, `moment` para
   pedidos e pagamentos).
+
+## Próximas etapas — deploy
+
+Arquitetura: Render Free (Docker) + Supabase Free somente como Postgres. Frontend depois.
+
+- [x] 1. Perfis: `PORT`, `SPRING_PROFILES_ACTIVE`, perfis `homolog` e `prod` com Postgres e H2 Console apenas no `test`.
+- [x] 2. Health check: actuator em `/actuator/health`, liberado no `SecurityConfig`.
+- [x] 3. Docker: `Dockerfile` + `.dockerignore` multi-stage Maven 17 / JRE 17.
+- [x] 4. Seed: sobrescrever a senha do admin no `prod` via `ADMIN_PASSWORD`.
+- [ ] 5. CI: workflow com `./mvnw -B clean test`.
+- [ ] 6. Supabase + Render: criar projeto, configurar env vars, validar health/login/categorias/produtos.
+- [ ] 7. Keepalive opcional e, depois, frontend React + Vite no Vercel.
+
+Homologação validada localmente via Docker + Supabase: `/actuator/health`, login do admin com
+`ADMIN_PASSWORD`, `/products`, `/categories` e `/users/me`. Item 6 permanece aberto até o deploy no Render.
