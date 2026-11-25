@@ -501,11 +501,17 @@ Arquitetura: Render Free (Docker) + Supabase Free somente como Postgres. Fronten
 - [x] 3. Docker: `Dockerfile` + `.dockerignore` multi-stage Maven 17 / JRE 17.
 - [x] 4. Seed: sobrescrever a senha do admin no `prod` via `ADMIN_PASSWORD`.
 - [ ] 5. CI: workflow com `./mvnw -B clean test`.
-- [ ] 6. Supabase + Render: criar projeto, configurar env vars, validar health/login/categorias/produtos.
+- [x] 6. Supabase + Render: criar projeto, configurar env vars, validar health/login/categorias/produtos.
 - [ ] 7. Keepalive opcional e, depois, frontend React + Vite no Vercel.
 
 Homologação validada localmente via Docker + Supabase: `/actuator/health`, login do admin com
-`ADMIN_PASSWORD`, `/products`, `/categories` e `/users/me`. Item 6 permanece aberto até o deploy no Render.
+`ADMIN_PASSWORD`, `/products`, `/categories` e `/users/me`.
+
+Produção validada no Render: https://dscommerce-kyjz.onrender.com. Tomcat na porta `10000`,
+Postgres via pooler `aws-0-us-east-2.pooler.supabase.com`, Flyway com schema v2 atualizado,
+`GET /actuator/health` com `{"status":"UP","groups":["liveness","readiness"]}`,
+`GET /categories`, `GET /products/category/3` e login do admin com um GET autenticado validados.
+O perfil `prod` desabilita Swagger/OpenAPI.
 
 Deploy manual no Render: criar Web Service com Runtime Docker, Root Directory `dscommerce`, Branch
 `main`, Health Check Path `/actuator/health` e Compute Plan Free. Definir env vars
